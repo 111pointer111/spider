@@ -1,0 +1,9 @@
+{
+  "id": "branch-chat-map",
+  "name": "Branch Chat Map",
+  "version": "0.1.0",
+  "minAppVersion": "1.5.0",
+  "description": "Create infinite Tab-driven AI chat branches as a knowledge map.",
+  "author": "huang",
+  "isDesktopOnly": false
+}

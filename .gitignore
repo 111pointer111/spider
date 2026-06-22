@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# Obsidian build artifacts
+/main.js
+/main.css
+/styles.css
+dist/
+
+# local test vaults and plugin state
+test-vault/
+.branch-chat-map/
+.obsidian/
+data.json
+
+# environment and local files
+.env
+.env.*
+.DS_Store
+
+# reports and caches
+artifacts/
+coverage/
+*.tsbuildinfo
+.vite/
+.vitest/
