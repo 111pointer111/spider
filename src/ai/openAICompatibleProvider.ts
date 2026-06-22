@@ -89,8 +89,8 @@ export class OpenAICompatibleProvider implements AiProvider {
         role: "system",
         content:
           this.settings.language === "zh-CN"
-            ? "为这个对话节点生成一个简短中文标题。只返回标题，不超过 8 个字。"
-            : "Create a short title for this chat node. Return only the title, under 8 words.",
+            ? "为这个对话节点生成一个简短中文标题。只返回标题，不要解释，不要引号，不要句号，不超过 8 个字。"
+            : "Create a short title for this chat node. Return only the title, no quotes, no period, under 8 words.",
         createdAt: new Date().toISOString(),
       },
       ...node.messages,

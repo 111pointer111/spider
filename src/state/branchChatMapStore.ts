@@ -146,8 +146,9 @@ export class BranchChatMapStore {
     }
 
     try {
-      const folder = `${this.plugin.settings.defaultExportFolder}/${slugifyFileName(map.title)}`;
-      const files = buildExportFiles(map);
+      const exportMap = await this.prepareMapForExport(map);
+      const folder = `${this.plugin.settings.defaultExportFolder}/${this.exportFolderName(exportMap)}`;
+      const files = buildExportFiles(exportMap);
       let entryPath = "";
 
       for (const file of files) {
@@ -366,9 +367,11 @@ export class BranchChatMapStore {
       if (titleNode && this.shouldAutoTitle(titleNode, nextMap)) {
         try {
           const title = this.normalizeGeneratedTitle(await provider.titleNode(titleNode, controller.signal));
-          nextMap = updateNode(nextMap, nodeId, { title });
-          if (nodeId === nextMap.rootNodeId) {
-            nextMap = updateMapTitle(nextMap, title);
+          if (title) {
+            nextMap = updateNode(nextMap, nodeId, { title });
+            if (nodeId === nextMap.rootNodeId) {
+              nextMap = updateMapTitle(nextMap, title);
+            }
           }
         } catch {
           // Naming is helpful, but it should never discard the completed answer.
@@ -398,6 +401,8 @@ export class BranchChatMapStore {
 
   private shouldAutoTitle(node: ChatNode, map: ChatMap): boolean {
     const language = this.plugin.settings.language;
+    const cleanTitle = cleanText(node.title);
+    const anchorTitle = node.anchorText ? truncateText(cleanText(node.anchorText), 72) : undefined;
     const defaultTitles = new Set([
       t(language, "rootQuestionTitle"),
       t(language, "untitledQuestionTitle"),
@@ -408,10 +413,46 @@ export class BranchChatMapStore {
     ]);
 
     if (node.id === map.rootNodeId) {
-      return defaultTitles.has(node.title) || map.title === t(language, "defaultMapTitle") || map.title === "Untitled chat map" || map.title === "未命名对话图谱";
+      return defaultTitles.has(cleanTitle) || map.title === t(language, "defaultMapTitle") || map.title === "Untitled chat map" || map.title === "未命名对话图谱";
     }
 
-    return defaultTitles.has(node.title);
+    return defaultTitles.has(cleanTitle) || Boolean(anchorTitle && cleanTitle === anchorTitle);
+  }
+
+  private async prepareMapForExport(map: ChatMap): Promise<ChatMap> {
+    const root = map.nodes[map.rootNodeId];
+    if (!root || root.messages.length === 0 || !this.plugin.settings.apiKey || !this.plugin.settings.model || !this.shouldAutoTitle(root, map)) {
+      return map;
+    }
+
+    try {
+      const provider = new OpenAICompatibleProvider(this.plugin.settings);
+      const controller = new AbortController();
+      const title = this.normalizeGeneratedTitle(await provider.titleNode(root, controller.signal));
+      if (!title) {
+        return map;
+      }
+
+      const titledMap = updateMapTitle(updateNode(map, root.id, { title }), title);
+      this.commitMap(titledMap);
+      return titledMap;
+    } catch {
+      return map;
+    }
+  }
+
+  private exportFolderName(map: ChatMap): string {
+    return `${this.formatExportTimestamp(map.createdAt)}-${slugifyFileName(map.title)}`;
+  }
+
+  private formatExportTimestamp(value: string): string {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return slugifyFileName(value);
+    }
+
+    const pad = (number: number): string => String(number).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
   }
 
   private normalizeGeneratedTitle(title: string): string {

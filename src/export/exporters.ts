@@ -49,6 +49,21 @@ function nodeSummaryLine(node: ChatNode): string {
   return node.summary || firstUserQuestion(node) || node.anchorText || "暂无总结";
 }
 
+function formatDateTime(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 function walkNodes(map: ChatMap, startId = map.rootNodeId): ChatNode[] {
   const root = map.nodes[startId];
   if (!root) {
@@ -95,16 +110,36 @@ function renderCallout(title: string, body?: string): string[] {
 }
 
 function renderMessage(message: ChatMessage): string[] {
-  return [`### ${roleName(message.role)} · ${message.createdAt}`, "", message.content.trim(), ""];
+  const calloutType = message.role === "user" ? "question" : message.role === "assistant" ? "info" : "note";
+  const body = message.content.trim();
+
+  return [
+    `> [!${calloutType}] ${roleName(message.role)} · ${formatDateTime(message.createdAt)}`,
+    ...(body ? body.split(/\r?\n/).map((line) => `> ${line}`) : [">"]),
+    "",
+  ];
 }
 
-function renderNodeMarkdown(map: ChatMap, node: ChatNode, depth: number): string {
+function renderNodeMarkdown(
+  map: ChatMap,
+  node: ChatNode,
+  depth: number,
+  nodeFileNames?: ReadonlyMap<string, string>,
+): string {
   const lines: string[] = [];
   lines.push(`${nodeHeading(depth)} ${node.title}`);
   lines.push("");
   lines.push(`- 状态：${node.status}`);
   lines.push(`- 子节点：${node.children.length}`);
-  lines.push(`- 更新时间：${node.updatedAt}`);
+  lines.push(`- 创建时间：${formatDateTime(node.createdAt)}`);
+  lines.push(`- 更新时间：${formatDateTime(node.updatedAt)}`);
+  if (node.parentId) {
+    const parent = map.nodes[node.parentId];
+    if (parent) {
+      const parentFileName = nodeFileNames?.get(parent.id);
+      lines.push(`- 父节点：${parentFileName ? `[${parent.title}](${parentFileName})` : parent.title}`);
+    }
+  }
   lines.push("");
 
   lines.push(...renderCallout("节点总结", node.summary));
@@ -123,7 +158,9 @@ function renderNodeMarkdown(map: ChatMap, node: ChatNode, depth: number): string
     lines.push("## 子问题");
     lines.push("");
     for (const child of children) {
-      lines.push(`- [[${child.title}]]：${nodeSummaryLine(child)}`);
+      const childFileName = nodeFileNames?.get(child.id);
+      const link = childFileName ? `[${child.title}](${childFileName})` : `[[${child.title}]]`;
+      lines.push(`- ${link}：${nodeSummaryLine(child)}`);
     }
     lines.push("");
   }
@@ -201,12 +238,32 @@ export function buildExportFiles(map: ChatMap): ExportFile[] {
   const nodeFileNames = new Map(nodes.map((node, index) => [node.id, nodeFileName(index, node)]));
   const mindmap = exportMermaidMindmap(map);
   const rootSummary = root ? nodeSummaryLine(root) : "No root node found.";
+  const rootFileName = root ? nodeFileNames.get(root.id) : undefined;
+  const nodeIndexLines = nodes.map((node, index) => {
+    const indent = "  ".repeat(depthOf(map, node));
+    const fileName = nodeFileNames.get(node.id) ?? nodeFileName(index, node);
+    return `${indent}- [${node.title}](nodes/${fileName})：${nodeSummaryLine(node)}`;
+  });
 
   const indexLines = [
     `# ${map.title}`,
     "",
     "> [!summary] 总览",
     `> ${rootSummary}`,
+    "",
+    "## 快速信息",
+    "",
+    "| 项目 | 内容 |",
+    "| --- | --- |",
+    `| 根问题 | ${rootFileName && root ? `[${root.title}](nodes/${rootFileName})` : root?.title ?? "缺少根节点"} |`,
+    `| 节点数量 | ${nodes.length} |`,
+    `| 连线数量 | ${map.edges.length} |`,
+    `| 创建时间 | ${formatDateTime(map.createdAt)} |`,
+    `| 更新时间 | ${formatDateTime(map.updatedAt)} |`,
+    "",
+    "## 推荐阅读路线",
+    "",
+    ...nodeIndexLines,
     "",
     "## 文件结构",
     "",
@@ -216,13 +273,11 @@ export function buildExportFiles(map: ChatMap): ExportFile[] {
     "- `canvas/map.canvas`：Obsidian Canvas 图谱",
     "- `data/map.json`：原始结构化数据",
     "",
-    "## 节点目录",
+    "## 使用建议",
     "",
-    ...nodes.map((node, index) => {
-      const indent = "  ".repeat(depthOf(map, node));
-      const fileName = nodeFileNames.get(node.id) ?? nodeFileName(index, node);
-      return `${indent}- [${node.title}](nodes/${fileName})：${nodeSummaryLine(node)}`;
-    }),
+    "- 从根问题开始读，然后沿着子问题向下钻。",
+    "- 如果要继续编辑标题，回到 spider 里修改节点标题后重新导出。",
+    "- `canvas/map.canvas` 适合在 Obsidian Canvas 里打开查看整体关系。",
     "",
     "## Mermaid 预览",
     "",
@@ -239,7 +294,7 @@ export function buildExportFiles(map: ChatMap): ExportFile[] {
     },
     ...nodes.map((node, index) => ({
       path: `nodes/${nodeFileNames.get(node.id) ?? nodeFileName(index, node)}`,
-      content: renderNodeMarkdown(map, node, 1),
+      content: renderNodeMarkdown(map, node, 1, nodeFileNames),
     })),
     {
       path: "diagrams/mindmap.mermaid.md",

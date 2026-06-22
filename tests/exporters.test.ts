@@ -24,6 +24,16 @@ describe("exporters", () => {
     expect(files.map((file) => file.path)).toEqual(
       expect.arrayContaining(["README.md", "diagrams/mindmap.mermaid.md", "canvas/map.canvas", "data/map.json"]),
     );
-    expect(files.some((file) => file.path.startsWith("nodes/") && file.content.includes("## 对话记录"))).toBe(true);
+
+    const readme = files.find((file) => file.path === "README.md");
+    expect(readme?.content).toContain("## 快速信息");
+    expect(readme?.content).toContain("## 推荐阅读路线");
+
+    const rootNode = files.find((file) => file.path.startsWith("nodes/01-"));
+    expect(rootNode?.content).toContain("[embedding](02-embedding.md)");
+
+    const childNode = files.find((file) => file.path.startsWith("nodes/02-"));
+    expect(childNode?.content).toContain("## 对话记录");
+    expect(childNode?.content).toContain("> [!question]");
   });
 });

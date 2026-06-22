@@ -1,7 +1,12 @@
 import { Plugin, WorkspaceLeaf, type Editor } from "obsidian";
 import { DEFAULT_SETTINGS, BranchChatMapSettingTab } from "./settings";
 import type { BranchChatMapSettings } from "./types";
-import { VIEW_TYPE_BRANCH_CHAT_MAP, VIEW_TYPE_BRANCH_CHAT_MAP_CHAT } from "./constants";
+import {
+  LEGACY_VIEW_TYPE_BRANCH_CHAT_MAP,
+  LEGACY_VIEW_TYPE_BRANCH_CHAT_MAP_CHAT,
+  VIEW_TYPE_BRANCH_CHAT_MAP,
+  VIEW_TYPE_BRANCH_CHAT_MAP_CHAT,
+} from "./constants";
 import { BranchChatMapChatView, BranchChatMapView } from "./view";
 import { t } from "./i18n";
 import { BranchChatMapStore } from "./state/branchChatMapStore";
@@ -79,6 +84,7 @@ export default class BranchChatMapPlugin extends Plugin {
     this.addSettingTab(new BranchChatMapSettingTab(this.app, this));
 
     this.app.workspace.onLayoutReady(() => {
+      this.detachLegacyViews();
       void this.ensureMainTabView(false).then((leaf) => {
         if (leaf) {
           void this.ensureChatSidebarView(true);
@@ -168,6 +174,11 @@ export default class BranchChatMapPlugin extends Plugin {
     this.app.workspace.rightSplit.expand();
 
     return leaf;
+  }
+
+  private detachLegacyViews(): void {
+    this.app.workspace.detachLeavesOfType(LEGACY_VIEW_TYPE_BRANCH_CHAT_MAP);
+    this.app.workspace.detachLeavesOfType(LEGACY_VIEW_TYPE_BRANCH_CHAT_MAP_CHAT);
   }
 
   private isRightSidebarLeaf(leaf: WorkspaceLeaf): boolean {

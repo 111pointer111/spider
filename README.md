@@ -14,10 +14,11 @@ When you are reading an AI answer and meet an unfamiliar concept, press `Tab` to
 - Optional child node creation from selected text.
 - OpenAI-compatible API settings.
 - Streaming AI responses.
+- AI-generated node and map titles, editable from the chat panel.
 - Chinese and English UI switch.
 - Local vault storage in `.spider/maps`.
 - Existing maps from older `.branch-chat-map/maps` installs are still readable.
-- Export to Markdown, Mermaid mindmap, and Obsidian Canvas.
+- Structured export packages with Markdown, Mermaid mindmap, Obsidian Canvas, and raw JSON.
 
 ## Interaction Model
 
@@ -28,6 +29,27 @@ When you are reading an AI answer and meet an unfamiliar concept, press `Tab` to
 - Press `Tab` in the graph or chat panel to create a child node.
 - Press `Shift + Tab` to move back to the parent node.
 - Press `Enter` in the composer to send, and `Shift + Enter` for a newline.
+
+## Exports
+
+Each root map exports into its own folder under the configured export directory:
+
+```text
+Spider Maps/
+  2026-06-22-1430-ai-learning/
+    README.md
+    nodes/
+      01-root-question.md
+      02-child-question.md
+    diagrams/
+      mindmap.mermaid.md
+    canvas/
+      map.canvas
+    data/
+      map.json
+```
+
+`README.md` is the reading entry point, with overview metadata, a recommended reading path, and a Mermaid preview. Node files contain summaries, anchors, parent/child links, and the full chat history.
 
 ## Privacy
 
