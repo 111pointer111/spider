@@ -1,6 +1,6 @@
-# Branch Chat Map
+# spider
 
-Branch Chat Map is an Obsidian plugin for building AI conversations as an expandable knowledge map.
+spider is an Obsidian plugin for building AI conversations as an expandable knowledge map.
 
 When you are reading an AI answer and meet an unfamiliar concept, press `Tab` to create a child chat node. You can keep pressing `Tab` inside child nodes to drill down without a depth limit. The graph stays in a full Obsidian tab, while the current node chat lives in the right sidebar like a normal Obsidian plugin panel.
 
@@ -15,12 +15,13 @@ When you are reading an AI answer and meet an unfamiliar concept, press `Tab` to
 - OpenAI-compatible API settings.
 - Streaming AI responses.
 - Chinese and English UI switch.
-- Local vault storage in `.branch-chat-map/maps`.
+- Local vault storage in `.spider/maps`.
+- Existing maps from older `.branch-chat-map/maps` installs are still readable.
 - Export to Markdown, Mermaid mindmap, and Obsidian Canvas.
 
 ## Interaction Model
 
-- Click the ribbon icon or run `Open branch chat map`.
+- Click the ribbon icon or run `Open spider`.
 - The knowledge graph opens in a normal main editor tab.
 - The node chat opens as a right-sidebar tab with the plugin icon.
 - Click a node in the graph to switch the active chat.
@@ -50,7 +51,7 @@ npm run build
 Then copy these files into your Obsidian vault:
 
 ```text
-.obsidian/plugins/branch-chat-map/
+.obsidian/plugins/spider/
   main.js
   manifest.json
   styles.css

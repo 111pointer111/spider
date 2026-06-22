@@ -1,5 +1,5 @@
 import { normalizePath, type App } from "obsidian";
-import { DATA_DIR } from "../constants";
+import { DATA_DIR, LEGACY_DATA_DIR } from "../constants";
 import { isChatMap } from "../domain/guards";
 import type { ChatMap } from "../types";
 import { slugifyFileName } from "../utils/text";
@@ -13,10 +13,16 @@ export class MapRepository {
 
   async loadLatestMap(): Promise<ChatMap | null> {
     await this.ensureDataDir();
-    const listed = await this.app.vault.adapter.list(DATA_DIR);
-    const files = listed.files
-      .filter((path) => path.endsWith(".json"))
-      .sort((left, right) => right.localeCompare(left));
+    return (await this.loadLatestMapFromDir(DATA_DIR)) ?? (await this.loadLatestMapFromDir(LEGACY_DATA_DIR));
+  }
+
+  private async loadLatestMapFromDir(dir: string): Promise<ChatMap | null> {
+    if (!(await this.app.vault.adapter.exists(dir))) {
+      return null;
+    }
+
+    const listed = await this.app.vault.adapter.list(dir);
+    const files = listed.files.filter((path) => path.endsWith(".json")).sort((left, right) => right.localeCompare(left));
 
     for (const path of files) {
       try {
@@ -41,8 +47,9 @@ export class MapRepository {
 
   async writeExport(folder: string, fileName: string, content: string): Promise<string> {
     const cleanFolder = normalizePath(folder);
-    await this.ensureFolder(cleanFolder);
     const path = normalizePath(`${cleanFolder}/${fileName}`);
+    const parentFolder = path.split("/").slice(0, -1).join("/");
+    await this.ensureFolder(parentFolder || cleanFolder);
     await this.app.vault.adapter.write(path, content);
     return path;
   }

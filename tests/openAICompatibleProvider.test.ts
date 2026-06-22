@@ -8,7 +8,7 @@ const settings: BranchChatMapSettings = {
   apiBaseUrl: "https://example.test/v1",
   apiKey: "test-key",
   model: "test-model",
-  defaultExportFolder: "Branch Chat Maps",
+  defaultExportFolder: "Spider Maps",
   useTabToCreateChildNodes: true,
   autoSummarizeNodes: false,
   includeParentContext: true,

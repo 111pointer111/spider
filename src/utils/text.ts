@@ -26,5 +26,5 @@ export function slugifyFileName(value: string): string {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
 
-  return slug || "branch-chat-map";
+  return slug || "spider";
 }

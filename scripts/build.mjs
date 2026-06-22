@@ -6,7 +6,7 @@ const prod = process.argv.includes("--production") || !process.argv.includes("--
 const watch = process.argv.includes("--watch");
 
 const banner =
-  "/* Branch Chat Map. Bundled for Obsidian. */";
+  "/* spider. Bundled for Obsidian. */";
 
 async function combineStyles() {
   const chunks = [];

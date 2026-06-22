@@ -145,6 +145,19 @@ export function updateNode(
   };
 }
 
+export function updateMapTitle(map: ChatMap, title: string): ChatMap {
+  const cleanTitle = cleanText(title).trim();
+  if (!cleanTitle) {
+    return map;
+  }
+
+  return {
+    ...map,
+    title: cleanTitle,
+    updatedAt: nowIso(),
+  };
+}
+
 export function getAncestorPath(map: ChatMap, nodeId: NodeId): ChatNode[] {
   const path: ChatNode[] = [];
   let cursor: NodeId | undefined = nodeId;

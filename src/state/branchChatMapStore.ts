@@ -1,13 +1,13 @@
 import { Notice } from "obsidian";
 import type BranchChatMapPlugin from "../main";
 import { OpenAICompatibleProvider } from "../ai/openAICompatibleProvider";
-import { createRootMap, addChildNode, appendMessage, createMessage, getAncestorPath, updateNode } from "../domain/chatMap";
+import { createRootMap, addChildNode, appendMessage, createMessage, getAncestorPath, updateMapTitle, updateNode } from "../domain/chatMap";
 import { applyDagreLayout } from "../domain/layout";
-import { exportCanvas, exportMarkdown, exportMermaidMindmap } from "../export/exporters";
+import { buildExportFiles } from "../export/exporters";
 import { t } from "../i18n";
 import { MapRepository } from "../storage/mapRepository";
 import type { ChatMap, ChatNode, NodeId } from "../types";
-import { slugifyFileName } from "../utils/text";
+import { cleanText, slugifyFileName, truncateText } from "../utils/text";
 
 export interface BranchChatMapState {
   map: ChatMap | null;
@@ -146,12 +146,18 @@ export class BranchChatMapStore {
     }
 
     try {
-      const baseName = slugifyFileName(map.title);
-      const folder = this.plugin.settings.defaultExportFolder;
-      const markdownPath = await this.repository.writeExport(folder, `${baseName}.md`, exportMarkdown(map));
-      await this.repository.writeExport(folder, `${baseName}.mermaid.md`, `\`\`\`mermaid\n${exportMermaidMindmap(map)}\`\`\`\n`);
-      await this.repository.writeExport(folder, `${baseName}.canvas`, exportCanvas(map));
-      new Notice(t(this.plugin.settings.language, "exported", { path: markdownPath }));
+      const folder = `${this.plugin.settings.defaultExportFolder}/${slugifyFileName(map.title)}`;
+      const files = buildExportFiles(map);
+      let entryPath = "";
+
+      for (const file of files) {
+        const path = await this.repository.writeExport(folder, file.path, file.content);
+        if (file.path === "README.md") {
+          entryPath = path;
+        }
+      }
+
+      new Notice(t(this.plugin.settings.language, "exported", { path: entryPath || folder }));
     } catch (exportError: unknown) {
       this.reportError(exportError);
     }
@@ -207,6 +213,21 @@ export class BranchChatMapStore {
         [nodeId]: value,
       },
     });
+  }
+
+  updateCurrentNodeTitle(title: string): void {
+    const cleanTitle = title.trim();
+    const { map, activeNodeId } = this.state;
+    if (!map || !activeNodeId || !cleanTitle) {
+      return;
+    }
+
+    let nextMap = updateNode(map, activeNodeId, { title: cleanTitle });
+    if (activeNodeId === map.rootNodeId) {
+      nextMap = updateMapTitle(nextMap, cleanTitle);
+    }
+
+    this.commitMap(nextMap);
   }
 
   markUnderstood(): void {
@@ -341,6 +362,19 @@ export class BranchChatMapStore {
         nextMap = updateNode(nextMap, nodeId, { summary });
       }
 
+      const titleNode = nextMap.nodes[nodeId];
+      if (titleNode && this.shouldAutoTitle(titleNode, nextMap)) {
+        try {
+          const title = this.normalizeGeneratedTitle(await provider.titleNode(titleNode, controller.signal));
+          nextMap = updateNode(nextMap, nodeId, { title });
+          if (nodeId === nextMap.rootNodeId) {
+            nextMap = updateMapTitle(nextMap, title);
+          }
+        } catch {
+          // Naming is helpful, but it should never discard the completed answer.
+        }
+      }
+
       this.commitMap(nextMap);
     } catch (generateError: unknown) {
       if (controller.signal.aborted) {
@@ -360,6 +394,28 @@ export class BranchChatMapStore {
       });
       this.abortController = null;
     }
+  }
+
+  private shouldAutoTitle(node: ChatNode, map: ChatMap): boolean {
+    const language = this.plugin.settings.language;
+    const defaultTitles = new Set([
+      t(language, "rootQuestionTitle"),
+      t(language, "untitledQuestionTitle"),
+      "Root question",
+      "Untitled question",
+      "根问题",
+      "未命名问题",
+    ]);
+
+    if (node.id === map.rootNodeId) {
+      return defaultTitles.has(node.title) || map.title === t(language, "defaultMapTitle") || map.title === "Untitled chat map" || map.title === "未命名对话图谱";
+    }
+
+    return defaultTitles.has(node.title);
+  }
+
+  private normalizeGeneratedTitle(title: string): string {
+    return truncateText(cleanText(title).replace(/^["'“”‘’]+|["'“”‘’]+$/g, ""), 42);
   }
 
   private reportError(error: unknown): void {

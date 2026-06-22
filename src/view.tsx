@@ -106,7 +106,7 @@ export class BranchChatMapView extends BranchChatMapBaseView {
   }
 
   protected getContentClassName(): string {
-    return "branch-chat-map-view";
+    return "spider-map-view";
   }
 
   protected renderApp(onController: (controller: BranchChatMapController) => void): ReactElement {
@@ -120,7 +120,7 @@ export class BranchChatMapChatView extends BranchChatMapBaseView {
   }
 
   protected getContentClassName(): string {
-    return "branch-chat-map-chat-view";
+    return "spider-chat-view";
   }
 
   protected renderApp(onController: (controller: BranchChatMapController) => void): ReactElement {

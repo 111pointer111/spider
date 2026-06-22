@@ -25,6 +25,7 @@ interface NodeDetailsProps {
   onRetry(): void;
   onSend(): void;
   onSummarize(): void;
+  onTitleChange(title: string): void;
 }
 
 export function NodeDetails({
@@ -48,13 +49,16 @@ export function NodeDetails({
   onRetry,
   onSend,
   onSummarize,
+  onTitleChange,
 }: NodeDetailsProps): ReactElement {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const sourcePath = `branch-chat-map/${node.id}.md`;
+  const [titleDraft, setTitleDraft] = useState(displayTitle(language, node.title));
+  const sourcePath = `spider/${node.id}.md`;
   const scrollToBottomLabel = language === "zh-CN" ? "跳到最新消息" : "Jump to latest message";
+  const titleInputLabel = language === "zh-CN" ? "节点标题" : "Node title";
 
   const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
     const messages = messagesRef.current;
@@ -86,9 +90,22 @@ export function NodeDetails({
     scrollToBottom();
   }, [scrollToBottom]);
 
+  const commitTitle = useCallback(() => {
+    const nextTitle = titleDraft.trim();
+    if (nextTitle && nextTitle !== node.title) {
+      onTitleChange(nextTitle);
+    } else {
+      setTitleDraft(displayTitle(language, node.title));
+    }
+  }, [language, node.title, onTitleChange, titleDraft]);
+
   useEffect(() => {
     inputRef.current?.focus();
   }, [focusToken, node.id]);
+
+  useEffect(() => {
+    setTitleDraft(displayTitle(language, node.title));
+  }, [language, node.id, node.title]);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => scrollToBottom("auto"));
@@ -118,7 +135,18 @@ export function NodeDetails({
       <div className="bcm-detail-header">
         <div>
           <div className="bcm-eyebrow">{parent ? t(language, "childOf", { title: displayTitle(language, parent.title) }) : t(language, "rootNode")}</div>
-          <h2>{displayTitle(language, node.title)}</h2>
+          <input
+            aria-label={titleInputLabel}
+            className="bcm-node-title-input"
+            value={titleDraft}
+            onBlur={commitTitle}
+            onChange={(event) => setTitleDraft(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.currentTarget.blur();
+              }
+            }}
+          />
           <div className="bcm-node-facts">{t(language, "nodeStats", { messages: node.messages.length, children: node.children.length })}</div>
         </div>
         <span className={`bcm-status bcm-status-${node.status}`}>{statusLabel(language, node.status)}</span>

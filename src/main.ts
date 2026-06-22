@@ -28,7 +28,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "open-branch-chat-map",
+      id: "open-spider",
       name: t(this.settings.language, "openMap"),
       callback: () => {
         void this.activateView();
@@ -36,7 +36,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "create-child-node",
+      id: "spider-create-child-node",
       name: t(this.settings.language, "createChildCommand"),
       callback: () => {
         void this.activateView().then(() => this.store.createChild());
@@ -44,7 +44,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "create-child-node-from-selection",
+      id: "spider-create-child-node-from-selection",
       name: t(this.settings.language, "createChildFromSelectionCommand"),
       editorCallback: (editor: Editor) => {
         const selection = editor.getSelection().trim();
@@ -53,7 +53,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "go-to-parent-node",
+      id: "spider-go-to-parent-node",
       name: t(this.settings.language, "goToParentCommand"),
       callback: () => {
         this.store.goToParent();
@@ -61,7 +61,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "summarize-current-node",
+      id: "spider-summarize-current-node",
       name: t(this.settings.language, "summarizeCurrentNodeCommand"),
       callback: () => {
         void this.store.summarizeCurrentNode();
@@ -69,7 +69,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "export-current-map",
+      id: "spider-export-current-map",
       name: t(this.settings.language, "exportMapCommand"),
       callback: () => {
         void this.store.exportMap();

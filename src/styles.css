@@ -1,8 +1,8 @@
-.branch-chat-map-view {
+.spider-map-view {
   padding: 0;
 }
 
-.branch-chat-map-chat-view {
+.spider-chat-view {
   padding: 0;
 }
 
@@ -340,11 +340,24 @@
   padding: 18px 18px 12px;
 }
 
-.bcm-detail-header h2 {
+.bcm-node-title-input {
+  display: block;
+  width: 100%;
   margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--bcm-text);
   font-size: 23px;
   font-weight: 760;
   line-height: 1.2;
+  box-shadow: none;
+}
+
+.bcm-node-title-input:focus {
+  outline: none;
+  box-shadow: 0 2px 0 0 var(--bcm-accent);
 }
 
 .bcm-node-facts {
@@ -786,7 +799,7 @@
     padding: 14px 14px 10px;
   }
 
-  .bcm-detail-header h2 {
+  .bcm-node-title-input {
     font-size: 20px;
   }
 

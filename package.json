@@ -1,17 +1,17 @@
 {
-  "name": "branch-chat-map",
+  "name": "spider",
   "version": "0.1.0",
   "description": "Obsidian plugin for Tab-driven infinite AI chat branches as a knowledge map.",
   "type": "module",
   "main": "main.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/111pointer111/branch-chat-map.git"
+    "url": "git+https://github.com/111pointer111/spider.git"
   },
   "bugs": {
-    "url": "https://github.com/111pointer111/branch-chat-map/issues"
+    "url": "https://github.com/111pointer111/spider/issues"
   },
-  "homepage": "https://github.com/111pointer111/branch-chat-map#readme",
+  "homepage": "https://github.com/111pointer111/spider#readme",
   "scripts": {
     "dev": "node scripts/build.mjs --watch",
     "build": "tsc --noEmit && node scripts/build.mjs",

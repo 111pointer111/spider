@@ -88,6 +88,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         onRetry={() => void plugin.store.retryAssistant()}
         onSend={() => void plugin.store.sendMessage()}
         onSummarize={() => void plugin.store.summarizeCurrentNode()}
+        onTitleChange={(title) => plugin.store.updateCurrentNodeTitle(title)}
       />
     </div>
   );
