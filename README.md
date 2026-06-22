@@ -38,6 +38,7 @@ Each root map exports into its own folder under the configured export directory:
 Spider Maps/
   2026-06-22-1430-ai-learning/
     README.md
+    index.md
     nodes/
       01-root-question.md
       02-child-question.md
@@ -49,7 +50,9 @@ Spider Maps/
       map.json
 ```
 
-`README.md` is the reading entry point, with overview metadata, a recommended reading path, and a Mermaid preview. Node files contain summaries, anchors, parent/child links, and the full chat history.
+`index.md` is the Obsidian reading entry point, with overview metadata, links to the Canvas and Mermaid files, and a recommended reading path. `README.md` stays as a simple package entry for external viewers.
+
+`canvas/map.canvas` is exported as a visual knowledge map with grouped layers, colored node states, arrow labels, and file nodes that preview each node's `Canvas card` section. Full chat history stays in the Markdown node files, and node files link back to the index, parent, and child nodes so Obsidian backlinks can connect the thinking chain.
 
 ## Privacy
 

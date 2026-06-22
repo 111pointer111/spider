@@ -148,7 +148,7 @@ export class BranchChatMapStore {
     try {
       const exportMap = await this.prepareMapForExport(map);
       const folder = `${this.plugin.settings.defaultExportFolder}/${this.exportFolderName(exportMap)}`;
-      const files = buildExportFiles(exportMap);
+      const files = buildExportFiles(exportMap, { exportFolder: folder });
       let entryPath = "";
 
       for (const file of files) {
