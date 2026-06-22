@@ -68,6 +68,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
   return (
     <div className="bcm-sidebar-root" ref={rootRef}>
       <NodeDetails
+        app={plugin.app}
         node={node}
         parent={parent}
         path={path}

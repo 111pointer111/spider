@@ -1,8 +1,11 @@
-import { useEffect, useRef, type ReactElement } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
+import type { App } from "obsidian";
 import { displayTitle, roleLabel, statusLabel, t } from "../i18n";
 import type { AppLanguage, ChatNode } from "../types";
+import { MarkdownContent } from "./MarkdownContent";
 
 interface NodeDetailsProps {
+  app: App;
   node: ChatNode;
   parent?: ChatNode;
   path: ChatNode[];
@@ -25,6 +28,7 @@ interface NodeDetailsProps {
 }
 
 export function NodeDetails({
+  app,
   node,
   parent,
   path,
@@ -46,10 +50,59 @@ export function NodeDetails({
   onSummarize,
 }: NodeDetailsProps): ReactElement {
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const messagesRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const sourcePath = `branch-chat-map/${node.id}.md`;
+  const scrollToBottomLabel = language === "zh-CN" ? "跳到最新消息" : "Jump to latest message";
+
+  const scrollToBottom = useCallback((behavior: ScrollBehavior = "smooth") => {
+    const messages = messagesRef.current;
+    if (!messages) {
+      return;
+    }
+
+    messages.scrollTo({
+      top: messages.scrollHeight,
+      behavior,
+    });
+    stickToBottomRef.current = true;
+    setShowScrollToBottom(false);
+  }, []);
+
+  const updateScrollState = useCallback(() => {
+    const messages = messagesRef.current;
+    if (!messages) {
+      return;
+    }
+
+    const distanceToBottom = messages.scrollHeight - messages.scrollTop - messages.clientHeight;
+    const isNearBottom = distanceToBottom < 80;
+    stickToBottomRef.current = isNearBottom;
+    setShowScrollToBottom(!isNearBottom);
+  }, []);
+
+  const handleScrollToBottomClick = useCallback(() => {
+    scrollToBottom();
+  }, [scrollToBottom]);
 
   useEffect(() => {
     inputRef.current?.focus();
   }, [focusToken, node.id]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => scrollToBottom("auto"));
+    return () => window.cancelAnimationFrame(frame);
+  }, [node.id, scrollToBottom]);
+
+  useEffect(() => {
+    if (!stickToBottomRef.current) {
+      return undefined;
+    }
+
+    const frame = window.requestAnimationFrame(() => scrollToBottom(streamingContent ? "auto" : "smooth"));
+    return () => window.cancelAnimationFrame(frame);
+  }, [node.messages.length, scrollToBottom, streamingContent]);
 
   return (
     <aside className="bcm-detail">
@@ -72,51 +125,59 @@ export function NodeDetails({
       </div>
 
       {node.anchorText ? (
-        <blockquote className="bcm-anchor">
+        <section className="bcm-context-strip bcm-anchor">
           <span>{t(language, "anchor")}</span>
-          {node.anchorText}
-        </blockquote>
-      ) : null}
-
-      {node.summary ? (
-        <section className="bcm-summary">
-          <span>{t(language, "summary")}</span>
-          <p>{node.summary}</p>
+          <MarkdownContent app={app} markdown={node.anchorText} sourcePath={sourcePath} className="bcm-context-markdown" />
         </section>
       ) : null}
 
-      <div className="bcm-messages" aria-label={t(language, "nodeMessages")}>
-        {node.messages.length === 0 && !streamingContent ? (
-          <div className="bcm-empty">
-            {language === "zh-CN" ? (
-              <>
-                按 <kbd>Tab</kbd> 创建子节点，或输入问题后按 <kbd>Enter</kbd> 发送。
-              </>
-            ) : (
-              <>
-                Press <kbd>Tab</kbd> to create a child node, or type a question here and press <kbd>Enter</kbd>.
-              </>
-            )}
-          </div>
-        ) : (
-          <>
-            {node.messages.map((message) => (
-              <article className={`bcm-message bcm-message-${message.role}`} key={message.id}>
-                <div className="bcm-message-meta">{roleLabel(language, message.role)}</div>
-                <div className="bcm-message-content">{message.content}</div>
-              </article>
-            ))}
-            {streamingContent ? (
-              <article className="bcm-message bcm-message-assistant bcm-message-streaming">
-                <div className="bcm-message-meta">{t(language, "streaming")}</div>
-                <div className="bcm-message-content">
-                  {streamingContent}
-                  <span className="bcm-caret" />
-                </div>
-              </article>
-            ) : null}
-          </>
-        )}
+      {node.summary ? (
+        <section className="bcm-context-strip bcm-summary">
+          <span>{t(language, "summary")}</span>
+          <MarkdownContent app={app} markdown={node.summary} sourcePath={sourcePath} className="bcm-context-markdown" />
+        </section>
+      ) : null}
+
+      <div className="bcm-message-area">
+        <div className="bcm-messages" aria-label={t(language, "nodeMessages")} onScroll={updateScrollState} ref={messagesRef}>
+          {node.messages.length === 0 && !streamingContent ? (
+            <div className="bcm-empty">
+              {language === "zh-CN" ? (
+                <>
+                  按 <kbd>Tab</kbd> 创建子节点，或输入问题后按 <kbd>Enter</kbd> 发送。
+                </>
+              ) : (
+                <>
+                  Press <kbd>Tab</kbd> to create a child node, or type a question here and press <kbd>Enter</kbd>.
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              {node.messages.map((message) => (
+                <article className={`bcm-message bcm-message-${message.role}`} key={message.id}>
+                  <div className="bcm-message-meta">{roleLabel(language, message.role)}</div>
+                  <MarkdownContent app={app} markdown={message.content} sourcePath={sourcePath} className="bcm-message-content markdown-rendered" />
+                </article>
+              ))}
+              {streamingContent ? (
+                <article className="bcm-message bcm-message-assistant bcm-message-streaming">
+                  <div className="bcm-message-meta">{t(language, "streaming")}</div>
+                  <div className="bcm-streaming-content">
+                    <MarkdownContent app={app} markdown={streamingContent} sourcePath={sourcePath} className="bcm-message-content markdown-rendered" />
+                    <span className="bcm-caret" />
+                  </div>
+                </article>
+              ) : null}
+            </>
+          )}
+        </div>
+
+        {showScrollToBottom ? (
+          <button className="bcm-scroll-bottom" type="button" aria-label={scrollToBottomLabel} title={scrollToBottomLabel} onClick={handleScrollToBottomClick}>
+            ↓
+          </button>
+        ) : null}
       </div>
 
       {error ? (
