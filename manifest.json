@@ -3,7 +3,7 @@
   "name": "spider",
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
-  "description": "Create infinite Tab-driven AI chat branches as a knowledge map.",
+  "description": "AI chat branches as an interactive knowledge map. Tab to drill down, arrow keys to navigate, structured exports.",
   "author": "huang",
   "isDesktopOnly": false
 }
