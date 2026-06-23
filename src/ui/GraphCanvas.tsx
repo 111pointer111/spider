@@ -30,6 +30,7 @@ interface BranchNodeData {
 type BranchFlowNode = Node<BranchNodeData, "branchNode">;
 
 const BranchNode = memo(function BranchNode({ data }: NodeProps<BranchFlowNode>) {
+  const statusLabelText = statusLabel(data.language, data.node.status);
   return (
     <div
       className={`bcm-graph-node ${data.active ? "is-active" : ""} ${data.inPath ? "is-path" : ""} ${
@@ -38,7 +39,7 @@ const BranchNode = memo(function BranchNode({ data }: NodeProps<BranchFlowNode>)
     >
       <Handle type="target" position={Position.Left} />
       <div className="bcm-node-header">
-        <span className="bcm-node-status">{statusLabel(data.language, data.node.status)}</span>
+        <span className="bcm-node-status">{statusLabelText}</span>
         {data.childCount > 0 ? (
           <button
             className="bcm-node-toggle"
@@ -48,7 +49,7 @@ const BranchNode = memo(function BranchNode({ data }: NodeProps<BranchFlowNode>)
               data.onToggleCollapse(data.node.id);
             }}
           >
-            {data.collapsed ? `+${data.childCount}` : `-${data.childCount}`}
+            {data.collapsed ? `+${data.childCount}` : data.childCount}
           </button>
         ) : null}
       </div>

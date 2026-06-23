@@ -39,6 +39,94 @@ export class MapRepository {
     return null;
   }
 
+  async loadMap(mapId: string): Promise<ChatMap | null> {
+    const fromDir = async (dir: string): Promise<ChatMap | null> => {
+      if (!(await this.app.vault.adapter.exists(dir))) {
+        return null;
+      }
+
+      const listed = await this.app.vault.adapter.list(dir);
+      for (const path of listed.files) {
+        if (!path.endsWith(".json")) continue;
+        try {
+          const raw = await this.app.vault.adapter.read(path);
+          const parsed = JSON.parse(raw) as unknown;
+          if (isChatMap(parsed) && parsed.id === mapId) {
+            return parsed;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      return null;
+    };
+
+    return (await fromDir(DATA_DIR)) ?? (await fromDir(LEGACY_DATA_DIR));
+  }
+
+  async listMaps(): Promise<ChatMap[]> {
+    const maps: ChatMap[] = [];
+
+    const fromDir = async (dir: string): Promise<void> => {
+      if (!(await this.app.vault.adapter.exists(dir))) {
+        return;
+      }
+
+      const listed = await this.app.vault.adapter.list(dir);
+      const files = listed.files.filter((path) => path.endsWith(".json"));
+
+      for (const path of files) {
+        try {
+          const raw = await this.app.vault.adapter.read(path);
+          const parsed = JSON.parse(raw) as unknown;
+          if (isChatMap(parsed)) {
+            maps.push(parsed);
+          }
+        } catch {
+          continue;
+        }
+      }
+    };
+
+    await fromDir(DATA_DIR);
+    await fromDir(LEGACY_DATA_DIR);
+
+    return maps;
+  }
+
+  async deleteMap(mapId: string): Promise<boolean> {
+    const fromDir = async (dir: string): Promise<string | null> => {
+      if (!(await this.app.vault.adapter.exists(dir))) {
+        return null;
+      }
+
+      const listed = await this.app.vault.adapter.list(dir);
+      for (const path of listed.files) {
+        if (!path.endsWith(".json")) continue;
+        try {
+          const raw = await this.app.vault.adapter.read(path);
+          const parsed = JSON.parse(raw) as unknown;
+          if (isChatMap(parsed) && parsed.id === mapId) {
+            return path;
+          }
+        } catch {
+          continue;
+        }
+      }
+
+      return null;
+    };
+
+    const path = (await fromDir(DATA_DIR)) ?? (await fromDir(LEGACY_DATA_DIR));
+    if (!path) {
+      return false;
+    }
+
+    await this.app.vault.adapter.remove(path);
+    return true;
+  }
+
   async saveMap(map: ChatMap): Promise<void> {
     await this.ensureDataDir();
     const path = this.mapPath(map);

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, type ReactElement } from "react";
 import type BranchChatMapPlugin from "../main";
-import { t } from "../i18n";
+import { displayTitle, t } from "../i18n";
 import { NodeDetails } from "./NodeDetails";
 import type { BranchChatMapController } from "./BranchChatMapApp";
 import { getSelectionInside } from "./BranchChatMapApp";
-import { useBranchChatMapState } from "./useBranchChatMapState";
+import { useActiveViewState } from "./useBranchChatMapState";
 
 interface BranchChatMapChatAppProps {
   plugin: BranchChatMapPlugin;
@@ -13,18 +13,21 @@ interface BranchChatMapChatAppProps {
 
 export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChatAppProps): ReactElement {
   const rootRef = useRef<HTMLDivElement>(null);
-  const state = useBranchChatMapState(plugin);
+  const state = useActiveViewState(plugin);
   const { map, activeNodeId, drafts, error, focusToken, pendingNodeId, streamingContent } = state;
   const node = activeNodeId && map ? map.nodes[activeNodeId] : null;
   const parent = node?.parentId && map ? map.nodes[node.parentId] : undefined;
-  const path = plugin.store.getActivePath();
   const language = plugin.settings.language;
+
+  const viewState = plugin.store.getActiveSession();
+
+  const path = viewState?.getActivePath() ?? [];
 
   const createChild = useCallback(
     (anchorText?: string) => {
-      plugin.store.createChild(anchorText?.trim() || getSelectionInside(rootRef.current));
+      viewState?.createChild(anchorText?.trim() || getSelectionInside(rootRef.current));
     },
-    [plugin.store],
+    [viewState],
   );
 
   const handleKeydown = useCallback(
@@ -34,28 +37,140 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         event.stopPropagation();
 
         if (event.shiftKey) {
-          plugin.store.goToParent();
+          viewState?.goToParent();
         } else {
           createChild();
         }
+        return;
       }
 
       if (event.key === "Escape") {
         window.getSelection()?.removeAllRanges();
+        return;
+      }
+
+      const tag = (event.target as Node)?.nodeName;
+      const isInput = tag === "INPUT" || tag === "TEXTAREA";
+
+      if ((event.key === "Delete" || event.key === "Backspace") && !isInput) {
+        const vs = viewState;
+        const snap = vs?.getSnapshot();
+        if (snap?.map && snap.activeNodeId && snap.activeNodeId !== snap.map.rootNodeId) {
+          event.preventDefault();
+          vs?.deleteNode(snap.activeNodeId);
+          return;
+        }
+      }
+
+      if (isInput && (event.key === "ArrowLeft" || event.key === "ArrowRight" || event.key === "ArrowUp" || event.key === "ArrowDown")) {
+        return;
+      }
+
+      const vs = viewState;
+      if (!vs) {
+        return;
+      }
+      const { map, activeNodeId: currentId } = vs.getSnapshot();
+      if (!map || !currentId) {
+        return;
+      }
+
+      const currentNode = map.nodes[currentId];
+      if (!currentNode) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        vs.goToParent();
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        if (currentNode.children.length > 0) {
+          const firstChild = currentNode.children[0];
+          if (firstChild) {
+            event.preventDefault();
+            vs.setActiveNode(firstChild);
+          }
+        }
+        return;
+      }
+
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        if (!currentNode.parentId) {
+          return;
+        }
+
+        const parent = map.nodes[currentNode.parentId];
+        if (!parent) {
+          return;
+        }
+
+        const siblings = parent.children;
+        const idx = siblings.indexOf(currentId);
+        if (idx < 0) {
+          return;
+        }
+
+        if (event.key === "ArrowUp" && idx > 0) {
+          const prev = siblings[idx - 1];
+          if (prev) {
+            event.preventDefault();
+            vs.setActiveNode(prev);
+          }
+        } else if (event.key === "ArrowDown" && idx < siblings.length - 1) {
+          const next = siblings[idx + 1];
+          if (next) {
+            event.preventDefault();
+            vs.setActiveNode(next);
+          }
+        }
       }
     },
-    [createChild, plugin.settings.useTabToCreateChildNodes, plugin.store],
+    [createChild, plugin.settings.useTabToCreateChildNodes, viewState],
   );
 
   useEffect(() => {
     onController({
       handleKeydown,
       createChild,
-      goToParent: () => plugin.store.goToParent(),
-      summarizeCurrentNode: () => plugin.store.summarizeCurrentNode(),
-      exportMap: () => plugin.store.exportMap(),
+      goToParent: () => viewState?.goToParent(),
+      summarizeCurrentNode: () => viewState?.summarizeCurrentNode() ?? Promise.resolve(),
+      exportMap: () => viewState?.exportMap() ?? Promise.resolve(),
     });
-  }, [createChild, handleKeydown, onController, plugin.store]);
+  }, [createChild, handleKeydown, onController, viewState]);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Tab" && plugin.settings.useTabToCreateChildNodes && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const container = rootRef.current;
+        if (!container) return;
+
+        const sel = window.getSelection();
+        const inContainer = (node: Node | null) => node instanceof Node && container.contains(node);
+
+        const hasSelection = (sel && sel.rangeCount > 0 && inContainer(sel.getRangeAt(0).commonAncestorContainer));
+        const inTextarea = document.activeElement?.tagName === "TEXTAREA" && inContainer(document.activeElement);
+
+        if (!hasSelection && !inTextarea) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.shiftKey) {
+          viewState?.goToParent();
+        } else {
+          viewState?.createChild(getSelectionInside(container) || undefined);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => document.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [plugin.settings.useTabToCreateChildNodes, viewState, plugin.settings.language]);
 
   if (!node) {
     return (
@@ -65,8 +180,13 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
     );
   }
 
+  const vs = viewState;
+
   return (
     <div className="bcm-sidebar-root" ref={rootRef}>
+      <div className="bcm-chat-map-name">
+        {map ? displayTitle(language, map.title) : ""}
+      </div>
       <NodeDetails
         app={plugin.app}
         node={node}
@@ -78,17 +198,16 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         isPending={pendingNodeId === node.id}
         language={language}
         streamingContent={streamingContent[node.id] ?? ""}
-        onAutoLayout={() => plugin.store.autoLayout()}
-        onCancel={() => plugin.store.cancelGeneration()}
+        onCancel={() => vs?.cancelGeneration()}
         onCreateChild={() => createChild()}
-        onDraftChange={(value) => plugin.store.updateDraft(node.id, value)}
-        onExport={() => void plugin.store.exportMap()}
-        onGoParent={() => plugin.store.goToParent()}
-        onMarkUnderstood={() => plugin.store.markUnderstood()}
-        onRetry={() => void plugin.store.retryAssistant()}
-        onSend={() => void plugin.store.sendMessage()}
-        onSummarize={() => void plugin.store.summarizeCurrentNode()}
-        onTitleChange={(title) => plugin.store.updateCurrentNodeTitle(title)}
+        onDeleteNode={(nodeId) => vs?.deleteNode(nodeId)}
+        onDraftChange={(value) => vs?.updateDraft(node.id, value)}
+        onGoParent={() => vs?.goToParent()}
+        onMarkUnderstood={() => vs?.markUnderstood()}
+        onRetry={() => void vs?.retryAssistant()}
+        onSend={() => void vs?.sendMessage()}
+        onSummarize={() => void vs?.summarizeCurrentNode()}
+        onTitleChange={(title) => vs?.updateCurrentNodeTitle(title)}
       />
     </div>
   );

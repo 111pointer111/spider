@@ -13,8 +13,9 @@
   },
   "homepage": "https://github.com/111pointer111/spider#readme",
   "scripts": {
-    "dev": "node scripts/build.mjs --watch",
-    "build": "tsc --noEmit && node scripts/build.mjs",
+    "dev": "node scripts/build.mjs",
+    "build": "tsc --noEmit && node scripts/build.mjs production",
+    "link": "node scripts/link.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

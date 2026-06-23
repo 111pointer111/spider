@@ -8,6 +8,9 @@ export type TranslationKey =
   | "goToParentCommand"
   | "summarizeCurrentNodeCommand"
   | "exportMapCommand"
+  | "newMapCommand"
+  | "switchMapCommand"
+  | "deleteNode"
   | "viewNotReady"
   | "defaultMapTitle"
   | "rootQuestionTitle"
@@ -69,6 +72,9 @@ const zh: TranslationDictionary = {
   goToParentCommand: "回到父节点",
   summarizeCurrentNodeCommand: "总结当前节点",
   exportMapCommand: "导出图谱",
+  deleteNode: "删除节点",
+  newMapCommand: "新建 spider",
+  switchMapCommand: "切换 spider 图谱",
   viewNotReady: "spider 还没准备好。",
   defaultMapTitle: "未命名对话图谱",
   rootQuestionTitle: "根问题",
@@ -129,6 +135,9 @@ const en: TranslationDictionary = {
   goToParentCommand: "Go to parent node",
   summarizeCurrentNodeCommand: "Summarize current node",
   exportMapCommand: "Export map",
+  deleteNode: "Delete node",
+  newMapCommand: "New spider",
+  switchMapCommand: "Switch spider map",
   viewNotReady: "spider is not ready yet.",
   defaultMapTitle: "Untitled chat map",
   rootQuestionTitle: "Root question",

@@ -1,0 +1,25 @@
+name: Release
+on:
+  push:
+    tags:
+      - "*"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+      - run: npm ci
+      - run: npm run build
+      - run: cp manifest.json main.js styles.css ${{ runner.temp }}/
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            main.js
+            styles.css
+            manifest.json
+          generate_release_notes: true

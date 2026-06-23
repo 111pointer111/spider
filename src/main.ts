@@ -1,4 +1,4 @@
-import { Plugin, WorkspaceLeaf, type Editor } from "obsidian";
+import { Notice, Plugin, WorkspaceLeaf, type Editor } from "obsidian";
 import { DEFAULT_SETTINGS, BranchChatMapSettingTab } from "./settings";
 import type { BranchChatMapSettings } from "./types";
 import {
@@ -10,6 +10,9 @@ import {
 import { BranchChatMapChatView, BranchChatMapView } from "./view";
 import { t } from "./i18n";
 import { BranchChatMapStore } from "./state/branchChatMapStore";
+import { MapSwitcherModal } from "./ui/MapSwitcherModal";
+import { createRootMap } from "./domain/chatMap";
+import { applyDagreLayout } from "./domain/layout";
 
 export default class BranchChatMapPlugin extends Plugin {
   settings: BranchChatMapSettings = DEFAULT_SETTINGS;
@@ -44,7 +47,12 @@ export default class BranchChatMapPlugin extends Plugin {
       id: "spider-create-child-node",
       name: t(this.settings.language, "createChildCommand"),
       callback: () => {
-        void this.activateView().then(() => this.store.createChild());
+        const vs = this.store.getActiveSession();
+        if (vs) {
+          vs.createChild();
+        } else {
+          void this.activateView().then(() => this.store.getActiveSession()?.createChild());
+        }
       },
     });
 
@@ -53,7 +61,12 @@ export default class BranchChatMapPlugin extends Plugin {
       name: t(this.settings.language, "createChildFromSelectionCommand"),
       editorCallback: (editor: Editor) => {
         const selection = editor.getSelection().trim();
-        void this.activateView().then(() => this.store.createChild(selection || undefined));
+        const vs = this.store.getActiveSession();
+        if (vs) {
+          vs.createChild(selection || undefined);
+        } else {
+          void this.activateView().then(() => this.store.getActiveSession()?.createChild(selection || undefined));
+        }
       },
     });
 
@@ -61,7 +74,7 @@ export default class BranchChatMapPlugin extends Plugin {
       id: "spider-go-to-parent-node",
       name: t(this.settings.language, "goToParentCommand"),
       callback: () => {
-        this.store.goToParent();
+        this.store.getActiveSession()?.goToParent();
       },
     });
 
@@ -69,7 +82,7 @@ export default class BranchChatMapPlugin extends Plugin {
       id: "spider-summarize-current-node",
       name: t(this.settings.language, "summarizeCurrentNodeCommand"),
       callback: () => {
-        void this.store.summarizeCurrentNode();
+        void this.store.getActiveSession()?.summarizeCurrentNode();
       },
     });
 
@@ -77,7 +90,24 @@ export default class BranchChatMapPlugin extends Plugin {
       id: "spider-export-current-map",
       name: t(this.settings.language, "exportMapCommand"),
       callback: () => {
-        void this.store.exportMap();
+        void this.store.getActiveSession()?.exportMap();
+      },
+    });
+
+    this.addCommand({
+      id: "spider-new-map",
+      name: t(this.settings.language, "newMapCommand"),
+      callback: () => {
+        void this.newSpiderView();
+      },
+    });
+
+    this.addCommand({
+      id: "spider-switch-map",
+      name: t(this.settings.language, "switchMapCommand"),
+      callback: () => {
+        const modal = new MapSwitcherModal(this);
+        void modal.loadMaps().then(() => modal.open());
       },
     });
 
@@ -111,7 +141,27 @@ export default class BranchChatMapPlugin extends Plugin {
   }
 
   async activateView(): Promise<void> {
-    await this.ensureMainTabView(true);
+    const leaf = await this.ensureMainTabView(true);
+    if (leaf) {
+      this.app.workspace.revealLeaf(leaf);
+    }
+    await this.ensureChatSidebarView(true);
+  }
+
+  async newSpiderView(): Promise<void> {
+    const language = this.settings.language;
+    const map = applyDagreLayout(createRootMap(t(language, "defaultMapTitle"), t(language, "rootQuestionTitle")));
+    await this.store.repository.saveMap(map);
+
+    this.store.prepareSessionWithMap(map);
+
+    const leaf = this.app.workspace.getLeaf("tab");
+    await leaf.setViewState({
+      type: VIEW_TYPE_BRANCH_CHAT_MAP,
+      active: true,
+    });
+    this.app.workspace.revealLeaf(leaf);
+
     await this.ensureChatSidebarView(true);
   }
 
@@ -122,17 +172,12 @@ export default class BranchChatMapPlugin extends Plugin {
     }
 
     const mainLeaf = existingLeaves.find((leaf) => this.isMainWorkspaceLeaf(leaf));
-    for (const existingLeaf of existingLeaves) {
-      if (existingLeaf !== mainLeaf) {
-        existingLeaf.detach();
-      }
+    if (mainLeaf) {
+      return mainLeaf;
     }
 
-    if (mainLeaf) {
-      if (openIfMissing) {
-        this.app.workspace.revealLeaf(mainLeaf);
-      }
-      return mainLeaf;
+    if (!openIfMissing) {
+      return null;
     }
 
     const leaf = this.app.workspace.getLeaf("tab");

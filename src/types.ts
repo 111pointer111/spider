@@ -57,6 +57,7 @@ export interface BranchChatMapSettings {
   autoSummarizeNodes: boolean;
   includeParentContext: boolean;
   streamResponses: boolean;
+  lastOpenedMapId?: string;
 }
 
 export interface AiChatRequest {

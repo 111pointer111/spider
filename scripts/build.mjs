@@ -1,12 +1,12 @@
 import esbuild from "esbuild";
 import { copyFile, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
+import { builtinModules } from "node:module";
 
-const prod = process.argv.includes("--production") || !process.argv.includes("--watch");
+const prod = process.argv[2] === "production";
 const watch = process.argv.includes("--watch");
 
-const banner =
-  "/* spider. Bundled for Obsidian. */";
+const banner = "/* spider. Bundled for Obsidian. */";
 
 async function combineStyles() {
   const chunks = [];
@@ -26,7 +26,7 @@ async function combineStyles() {
   }
 }
 
-const buildOptions = {
+const context = await esbuild.context({
   banner: {
     js: banner,
   },
@@ -35,6 +35,7 @@ const buildOptions = {
   external: [
     "obsidian",
     "electron",
+    ...builtinModules,
     "@codemirror/autocomplete",
     "@codemirror/collab",
     "@codemirror/commands",
@@ -54,27 +55,14 @@ const buildOptions = {
   treeShaking: true,
   outfile: "main.js",
   minify: prod,
-};
+});
 
-if (watch) {
-  const context = await esbuild.context({
-    ...buildOptions,
-    plugins: [
-      {
-        name: "combine-styles",
-        setup(build) {
-          build.onEnd(async () => {
-            await combineStyles();
-          });
-        },
-      },
-    ],
-  });
-
+if (prod) {
+  await context.rebuild();
+  await combineStyles();
+  process.exit(0);
+} else {
   await context.watch();
   await combineStyles();
   console.log("Watching for changes...");
-} else {
-  await esbuild.build(buildOptions);
-  await combineStyles();
 }
