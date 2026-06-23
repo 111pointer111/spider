@@ -48,9 +48,12 @@ Spider Maps/
 
 Canvas exports include colored node states, arrow labels, and inline file previews. Markdown files link to parent, child, and index — backlinks connect the thinking chain.
 
-### 🔐 Privacy First
-- Your API key stays in local Obsidian plugin data
+### 🔐 Privacy & Network Disclosure
+- This plugin **requires network access** to function. It connects to the AI API endpoint you configure (default: `api.openai.com`). You must provide your own API key.
+- AI requests include: current node messages, optional parent context and selected anchor text
+- Your API key stays in local Obsidian plugin data on your device
 - No vault-wide scanning. Only current node context is sent
+- All maps and plugin features (graph, navigation, exports) work fully offline without AI
 - All maps are stored as local JSON files in `.spider/maps`
 
 ### 🌐 Multi-Language

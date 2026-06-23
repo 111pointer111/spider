@@ -4,6 +4,6 @@
   "version": "0.1.0",
   "minAppVersion": "1.5.0",
   "description": "AI chat branches as an interactive knowledge map. Tab to drill down, arrow keys to navigate, structured exports.",
-  "author": "huang",
+  "author": "huangtao",
   "isDesktopOnly": false
 }
