@@ -57,6 +57,8 @@ export type TranslationKey =
   | "settingTabDesc"
   | "settingParentContextName"
   | "settingParentContextDesc"
+  | "settingFullContextName"
+  | "settingFullContextDesc"
   | "settingStreamName"
   | "settingStreamDesc"
   | "settingAutoSummaryName"
@@ -121,6 +123,8 @@ const zh: TranslationDictionary = {
   settingTabDesc: "开启后，插件视图内 Tab 会创建子节点，而不是输入缩进。",
   settingParentContextName: "携带上级上下文",
   settingParentContextDesc: "子节点请求会携带上级标题、总结和选中的原文锚点。",
+  settingFullContextName: "全图谱上下文",
+  settingFullContextDesc: "开启后 AI 请求会携带图谱中其他节点的对话记录作为参考，消耗更多 token。",
   settingStreamName: "流式输出",
   settingStreamDesc: "开启后 AI 回复会边生成边显示。",
   settingAutoSummaryName: "自动总结节点",
@@ -184,6 +188,8 @@ const en: TranslationDictionary = {
   settingTabDesc: "When enabled, Tab creates a child node instead of inserting indentation inside the plugin view.",
   settingParentContextName: "Include parent context",
   settingParentContextDesc: "Send parent title, summary, and selected anchor text with child-node AI requests.",
+  settingFullContextName: "Full map context",
+  settingFullContextDesc: "Include other nodes' conversations in AI requests for full context. Uses more tokens.",
   settingStreamName: "Stream responses",
   settingStreamDesc: "Show AI responses as they are generated.",
   settingAutoSummaryName: "Auto-summarize nodes",

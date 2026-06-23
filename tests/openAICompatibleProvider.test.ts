@@ -12,6 +12,7 @@ const settings: BranchChatMapSettings = {
   useTabToCreateChildNodes: true,
   autoSummarizeNodes: false,
   includeParentContext: true,
+  includeFullContext: false,
   streamResponses: true,
 };
 

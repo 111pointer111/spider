@@ -6,7 +6,7 @@ import { applyDagreLayout } from "../domain/layout";
 import { buildExportFiles } from "../export/exporters";
 import { t } from "../i18n";
 import { MapRepository } from "../storage/mapRepository";
-import type { ChatMap, ChatMapId, ChatNode, NodeId } from "../types";
+import type { ChatMap, ChatMapId, ChatMessage, ChatNode, NodeId } from "../types";
 import { cleanText, slugifyFileName, truncateText } from "../utils/text";
 
 export interface BranchChatMapState {
@@ -431,6 +431,34 @@ export class ViewState {
     void this.repository.saveMap(nextMap).catch((saveError: unknown) => this.reportError(saveError));
   }
 
+  private buildContextMessages(map: ChatMap, currentNodeId: NodeId): ChatMessage[] {
+    const result: ChatMessage[] = [];
+
+    for (const node of Object.values(map.nodes)) {
+      if (node.id === currentNodeId || node.messages.length === 0) {
+        continue;
+      }
+
+      result.push({
+        id: `ctx_${node.id}_header`,
+        role: "system",
+        content: `[Node: ${node.title}]`,
+        createdAt: node.createdAt,
+      });
+
+      for (const msg of node.messages) {
+        result.push({
+          id: `ctx_${msg.id}`,
+          role: msg.role,
+          content: msg.content,
+          createdAt: msg.createdAt,
+        });
+      }
+    }
+
+    return result;
+  }
+
   private async generateAssistant(baseMap: ChatMap, nodeId: NodeId): Promise<void> {
     const requestNode = baseMap.nodes[nodeId];
     if (!requestNode) {
@@ -453,11 +481,15 @@ export class ViewState {
     try {
       const provider = new OpenAICompatibleProvider(this.plugin.settings);
       const parent = requestNode.parentId ? baseMap.nodes[requestNode.parentId] : undefined;
+      const contextMessages = this.plugin.settings.includeFullContext
+        ? this.buildContextMessages(baseMap, nodeId)
+        : undefined;
 
       if (this.plugin.settings.streamResponses) {
         for await (const chunk of provider.streamChat({
           node: requestNode,
           parent,
+          contextMessages,
           model: this.plugin.settings.model,
           includeParentContext: this.plugin.settings.includeParentContext,
           signal: controller.signal,
@@ -474,6 +506,7 @@ export class ViewState {
         answer = await provider.chat({
           node: requestNode,
           parent,
+          contextMessages,
           model: this.plugin.settings.model,
           includeParentContext: this.plugin.settings.includeParentContext,
           signal: controller.signal,

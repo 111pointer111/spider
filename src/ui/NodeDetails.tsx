@@ -104,6 +104,12 @@ export function NodeDetails({
     return () => window.cancelAnimationFrame(frame);
   }, [node.messages.length, scrollToBottom, streamingContent]);
 
+  useEffect(() => {
+    if (node.messages.length === 0) {
+      inputRef.current?.focus();
+    }
+  }, [node.id]);
+
   return (
     <aside className="bcm-detail">
       {path.length > 1 ? (

@@ -100,8 +100,8 @@ export class MapSwitcherModal extends FuzzySuggestModal<MapItem> {
     deleteBtn.onclick = async (e) => {
       e.stopPropagation();
       const ok = this.language === "zh-CN"
-        ? confirm("确认删除此图谱？")
-        : confirm("Delete this map?");
+        ? window.confirm("确认删除此图谱？")
+        : window.confirm("Delete this map?");
       if (!ok) return;
 
       await this.plugin.store.repository.deleteMap(mapItem.id);

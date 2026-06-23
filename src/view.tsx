@@ -145,7 +145,7 @@ export class BranchChatMapView extends BranchChatMapBaseView {
       }),
     );
 
-    if (this.app.workspace.activeLeaf === this.leaf) {
+    if (this.app.workspace.getActiveViewOfType(BranchChatMapView) === this) {
       this.plugin.store.setActiveSession(this.leafId);
     }
   }

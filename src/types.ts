@@ -56,6 +56,7 @@ export interface BranchChatMapSettings {
   useTabToCreateChildNodes: boolean;
   autoSummarizeNodes: boolean;
   includeParentContext: boolean;
+  includeFullContext: boolean;
   streamResponses: boolean;
   lastOpenedMapId?: string;
 }
@@ -63,6 +64,7 @@ export interface BranchChatMapSettings {
 export interface AiChatRequest {
   node: ChatNode;
   parent?: ChatNode;
+  contextMessages?: ChatMessage[];
   model: string;
   includeParentContext: boolean;
   signal?: AbortSignal;

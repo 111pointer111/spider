@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: BranchChatMapSettings = {
   useTabToCreateChildNodes: true,
   autoSummarizeNodes: false,
   includeParentContext: true,
+  includeFullContext: false,
   streamResponses: true,
 };
 
@@ -29,7 +30,7 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
     const language = this.plugin.settings.language;
     containerEl.empty();
 
-    containerEl.createEl("h2", { text: t(language, "settingsTitle") });
+    new Setting(containerEl).setName(t(language, "settingsTitle")).setHeading();
 
     new Setting(containerEl)
       .setName(t(language, "settingLanguageName"))
@@ -119,6 +120,18 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.includeParentContext)
           .onChange(async (value) => {
             this.plugin.settings.includeParentContext = value;
+            await this.plugin.saveSettings();
+          });
+      });
+
+    new Setting(containerEl)
+      .setName(t(language, "settingFullContextName"))
+      .setDesc(t(language, "settingFullContextDesc"))
+      .addToggle((toggle) => {
+        toggle
+          .setValue(this.plugin.settings.includeFullContext)
+          .onChange(async (value) => {
+            this.plugin.settings.includeFullContext = value;
             await this.plugin.saveSettings();
           });
       });

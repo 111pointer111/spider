@@ -44,7 +44,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-create-child-node",
+      id: "create-child-node",
       name: t(this.settings.language, "createChildCommand"),
       callback: () => {
         const vs = this.store.getActiveSession();
@@ -57,7 +57,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-create-child-node-from-selection",
+      id: "create-child-node-from-selection",
       name: t(this.settings.language, "createChildFromSelectionCommand"),
       editorCallback: (editor: Editor) => {
         const selection = editor.getSelection().trim();
@@ -71,7 +71,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-go-to-parent-node",
+      id: "go-to-parent-node",
       name: t(this.settings.language, "goToParentCommand"),
       callback: () => {
         this.store.getActiveSession()?.goToParent();
@@ -79,7 +79,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-summarize-current-node",
+      id: "summarize-current-node",
       name: t(this.settings.language, "summarizeCurrentNodeCommand"),
       callback: () => {
         void this.store.getActiveSession()?.summarizeCurrentNode();
@@ -87,7 +87,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-export-current-map",
+      id: "export-current-map",
       name: t(this.settings.language, "exportMapCommand"),
       callback: () => {
         void this.store.getActiveSession()?.exportMap();
@@ -95,7 +95,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-new-map",
+      id: "new-map",
       name: t(this.settings.language, "newMapCommand"),
       callback: () => {
         void this.newSpiderView();
@@ -103,7 +103,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "spider-switch-map",
+      id: "switch-map",
       name: t(this.settings.language, "switchMapCommand"),
       callback: () => {
         const modal = new MapSwitcherModal(this);
@@ -125,8 +125,6 @@ export default class BranchChatMapPlugin extends Plugin {
 
   onunload(): void {
     this.store.dispose();
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_BRANCH_CHAT_MAP);
-    this.app.workspace.detachLeavesOfType(VIEW_TYPE_BRANCH_CHAT_MAP_CHAT);
   }
 
   async loadSettings(): Promise<void> {

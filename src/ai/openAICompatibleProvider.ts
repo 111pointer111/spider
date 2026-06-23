@@ -1,3 +1,4 @@
+import { requestUrl } from "obsidian";
 import type { AiChatRequest, AiProvider, AppLanguage, BranchChatMapSettings, ChatMessage, ChatNode } from "../types";
 import { t } from "../i18n";
 
@@ -43,6 +44,20 @@ function buildMessages(request: AiChatRequest, language: AppLanguage): ChatMessa
       id: "system_parent_context",
       role: "system",
       content: `Use this compact context for the child question.\n${context}`,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  if (request.contextMessages && request.contextMessages.length > 0) {
+    messages.push({
+      id: "system_full_context",
+      role: "system",
+      content:
+        language === "zh-CN"
+          ? "以下是当前图谱中其他节点的对话记录，供你参考整体上下文：\n\n" +
+            request.contextMessages.map((m) => `${m.role}: ${m.content}`).join("\n")
+          : "Below are conversations from other nodes in this map for context:\n\n" +
+            request.contextMessages.map((m) => `${m.role}: ${m.content}`).join("\n"),
       createdAt: new Date().toISOString(),
     });
   }
@@ -113,7 +128,8 @@ export class OpenAICompatibleProvider implements AiProvider {
     }
 
     const baseUrl = this.settings.apiBaseUrl.replace(/\/+$/, "");
-    const response = await fetch(`${baseUrl}/chat/completions`, {
+    const response = await requestUrl({
+      url: `${baseUrl}/chat/completions`,
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -127,15 +143,15 @@ export class OpenAICompatibleProvider implements AiProvider {
         })),
         stream: false,
       }),
-      signal,
+      throw: false,
     });
 
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      throw new Error(t(this.settings.language, "aiRequestFailed", { status: response.status, body: body.slice(0, 240) }));
+    if (response.status < 200 || response.status >= 300) {
+      const body = typeof response.text === "string" ? response.text.slice(0, 240) : "";
+      throw new Error(t(this.settings.language, "aiRequestFailed", { status: response.status, body }));
     }
 
-    const data = (await response.json()) as ChatCompletionResponse;
+    const data = response.json as ChatCompletionResponse;
     const content = data.choices?.[0]?.message?.content?.trim();
 
     if (!content) {
