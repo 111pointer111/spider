@@ -89,23 +89,23 @@
   flex-shrink: 0;
 }
 
-.bcm-topbar-btn {
-  border: 1px solid var(--bcm-border-subtle) !important;
-  border-radius: 6px !important;
-  background: transparent !important;
-  color: var(--bcm-muted) !important;
+.bcm-topbar-actions .bcm-topbar-btn {
+  border: 1px solid var(--bcm-border-subtle);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bcm-muted);
   cursor: pointer;
   font-size: 12px;
   font-weight: 500;
-  padding: 4px 10px !important;
-  min-height: unset !important;
+  padding: 4px 10px;
+  min-height: unset;
   line-height: 1;
   transition: border-color 150ms ease, color 150ms ease;
 }
 
-.bcm-topbar-btn:hover {
-  border-color: var(--bcm-border) !important;
-  color: var(--bcm-text) !important;
+.bcm-topbar-actions .bcm-topbar-btn:hover {
+  border-color: var(--bcm-border);
+  color: var(--bcm-text);
 }
 
 .bcm-eyebrow {
@@ -153,14 +153,14 @@
   flex-shrink: 0;
 }
 
-.bcm-title-add {
+.bcm-title-row .bcm-title-add {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border: 1px solid var(--bcm-border-subtle) !important;
-  border-radius: 5px !important;
-  background: transparent !important;
-  color: var(--bcm-muted) !important;
+  border: 1px solid var(--bcm-border-subtle);
+  border-radius: 5px;
+  background: transparent;
+  color: var(--bcm-muted);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -168,15 +168,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 !important;
-  min-height: unset !important;
+  padding: 0;
+  min-height: unset;
   transition: border-color 150ms ease, color 150ms ease;
 }
 
-.bcm-title-add:hover {
-  border-color: var(--bcm-accent) !important;
-  color: var(--bcm-accent) !important;
-  background: var(--bcm-accent-soft) !important;
+.bcm-title-row .bcm-title-add:hover {
+  border-color: var(--bcm-accent);
+  color: var(--bcm-accent);
+  background: var(--bcm-accent-soft);
 }
 
 .bcm-topbar-meta {
@@ -202,11 +202,11 @@
   margin-bottom: 24px;
 }
 
-.bcm-gallery-new {
-  border: 1px solid var(--bcm-border) !important;
-  border-radius: var(--bcm-radius) !important;
-  background: var(--bcm-panel) !important;
-  color: var(--bcm-text) !important;
+.bcm-gallery .bcm-gallery-new {
+  border: 1px solid var(--bcm-border);
+  border-radius: var(--bcm-radius);
+  background: var(--bcm-panel);
+  color: var(--bcm-text);
   cursor: pointer;
   padding: 8px 18px;
   font-weight: 600;
@@ -214,9 +214,9 @@
   transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.bcm-gallery-new:hover {
-  border-color: var(--bcm-accent) !important;
-  box-shadow: 0 0 0 2px var(--bcm-accent-soft) !important;
+.bcm-gallery .bcm-gallery-new:hover {
+  border-color: var(--bcm-accent);
+  box-shadow: 0 0 0 2px var(--bcm-accent-soft);
 }
 
 .bcm-gallery-empty {
@@ -322,22 +322,22 @@
   font-weight: 500;
 }
 
-.bcm-gallery-card-delete {
+.bcm-gallery-card .bcm-gallery-card-delete {
   opacity: 0;
   width: 22px;
   height: 22px;
-  border: none !important;
-  border-radius: 5px !important;
-  background: transparent !important;
-  color: var(--bcm-muted) !important;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--bcm-muted);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 !important;
-  min-height: unset !important;
+  padding: 0;
+  min-height: unset;
   transition: opacity 150ms ease, color 150ms ease, background 150ms ease;
 }
 
@@ -345,9 +345,9 @@
   opacity: 1;
 }
 
-.bcm-gallery-card-delete:hover {
-  color: var(--bcm-danger) !important;
-  background: color-mix(in srgb, var(--bcm-danger) 10%, transparent) !important;
+.bcm-gallery-card .bcm-gallery-card-delete:hover {
+  color: var(--bcm-danger);
+  background: color-mix(in srgb, var(--bcm-danger) 10%, transparent);
 }
 
 /* ─── Workspace / split ─── */
@@ -459,11 +459,11 @@
   letter-spacing: 0.02em;
 }
 
-.bcm-node-toggle {
-  min-height: unset !important;
-  padding: 2px 6px !important;
-  font-size: 10px !important;
-  border-radius: 4px !important;
+.bcm-graph-node .bcm-node-toggle {
+  min-height: unset;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 4px;
 }
 
 .bcm-node-title {
@@ -631,12 +631,12 @@
   display: none;
 }
 
-.bcm-detail-actions button,
-.bcm-composer-actions button {
-  border: 1px solid var(--bcm-border-subtle) !important;
-  border-radius: 6px !important;
-  background: transparent !important;
-  color: var(--bcm-muted) !important;
+.bcm-detail .bcm-detail-actions button,
+.bcm-detail .bcm-composer-actions button {
+  border: 1px solid var(--bcm-border-subtle);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bcm-muted);
   cursor: pointer;
   min-height: 28px;
   padding: 4px 10px;
@@ -646,27 +646,27 @@
   transition: border-color 150ms ease, color 150ms ease, background 150ms ease;
 }
 
-.bcm-detail-actions button:hover:not(:disabled),
-.bcm-composer-actions button:hover:not(:disabled) {
-  border-color: var(--bcm-border) !important;
-  color: var(--bcm-text) !important;
-  background: var(--bcm-panel-raised) !important;
+.bcm-detail .bcm-detail-actions button:hover:not(:disabled),
+.bcm-detail .bcm-composer-actions button:hover:not(:disabled) {
+  border-color: var(--bcm-border);
+  color: var(--bcm-text);
+  background: var(--bcm-panel-raised);
 }
 
-.bcm-detail-actions button:disabled,
-.bcm-composer-actions button:disabled {
+.bcm-detail .bcm-detail-actions button:disabled,
+.bcm-detail .bcm-composer-actions button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
 }
 
-.bcm-composer-actions button {
-  border-color: color-mix(in srgb, var(--bcm-accent) 40%, var(--bcm-border)) !important;
-  color: var(--bcm-accent-strong) !important;
+.bcm-detail .bcm-composer-actions button {
+  border-color: color-mix(in srgb, var(--bcm-accent) 40%, var(--bcm-border));
+  color: var(--bcm-accent-strong);
   font-weight: 600;
 }
 
-.bcm-composer-actions button:hover:not(:disabled) {
-  background: var(--bcm-accent-soft) !important;
+.bcm-detail .bcm-composer-actions button:hover:not(:disabled) {
+  background: var(--bcm-accent-soft);
 }
 
 /* ─── Messages ─── */
@@ -802,7 +802,8 @@
   min-width: 0;
 }
 
-.bcm-scroll-jump {
+.bcm-scroll-area .bcm-scroll-jump,
+.bcm-message-area .bcm-scroll-jump {
   position: sticky;
   z-index: 5;
   width: 30px;
@@ -813,10 +814,10 @@
   border-radius: 999px;
   margin-left: auto;
   margin-right: auto;
-  background: var(--bcm-panel) !important;
-  box-shadow: var(--bcm-shadow-md) !important;
-  border: 1px solid var(--bcm-border-subtle) !important;
-  color: var(--bcm-muted) !important;
+  background: var(--bcm-panel);
+  box-shadow: var(--bcm-shadow-md);
+  border: 1px solid var(--bcm-border-subtle);
+  color: var(--bcm-muted);
   font-size: 14px;
   font-weight: 600;
   line-height: 1;
@@ -1051,18 +1052,18 @@
 
 /* ─── Map switcher ─── */
 
-.suggestion-container {
-  max-height: min(80vh, 700px) !important;
-  overflow-y: auto !important;
+div.suggestion-container {
+  max-height: min(80vh, 700px);
+  overflow-y: auto;
 }
 
-.suggestion-container .suggestion {
-  max-height: none !important;
-  overflow: visible !important;
+div.suggestion-container div.suggestion {
+  max-height: none;
+  overflow: visible;
 }
 
-.suggestion-item {
-  overflow: visible !important;
+div.suggestion-container .suggestion-item {
+  overflow: visible;
 }
 
 .map-switcher-item {
@@ -1096,22 +1097,22 @@
   margin-top: 1px;
 }
 
-.map-switcher-delete {
+.map-switcher-item .map-switcher-delete {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
-  border: none !important;
-  border-radius: 5px !important;
-  background: transparent !important;
-  color: var(--bcm-muted) !important;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--bcm-muted);
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 !important;
-  min-height: unset !important;
+  padding: 0;
+  min-height: unset;
   opacity: 0;
   transition: opacity 120ms ease, color 120ms ease, background 120ms ease;
 }
@@ -1120,7 +1121,7 @@
   opacity: 1;
 }
 
-.map-switcher-delete:hover {
-  color: var(--bcm-danger) !important;
-  background: color-mix(in srgb, var(--bcm-danger) 10%, transparent) !important;
+.map-switcher-item .map-switcher-delete:hover {
+  color: var(--bcm-danger);
+  background: color-mix(in srgb, var(--bcm-danger) 10%, transparent);
 }
