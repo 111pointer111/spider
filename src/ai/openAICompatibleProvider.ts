@@ -175,6 +175,7 @@ export class OpenAICompatibleProvider implements AiProvider {
     }
 
     const baseUrl = this.settings.apiBaseUrl.replace(/\/+$/, "");
+    // Streaming requires fetch — requestUrl does not support ReadableStream
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {

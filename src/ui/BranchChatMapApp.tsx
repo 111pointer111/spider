@@ -10,6 +10,10 @@ import { MapGallery } from "./MapGallery";
 import type { ViewState } from "../state/viewState";
 import type { ChatMapId } from "../types";
 
+interface ObsidianWindow {
+  activeDocument: Document;
+}
+
 export interface BranchChatMapController {
   handleKeydown(event: KeyboardEvent): void;
   createChild(anchorText?: string): void;
@@ -27,12 +31,12 @@ interface BranchChatMapAppProps {
   onLoadMap(mapId: ChatMapId): void;
 }
 
-export function getSelectionInside(root: HTMLElement | null): string | undefined {
+export function getSelectionInside(root: HTMLElement | null, doc: Document = document): string | undefined {
   if (!root) {
     return undefined;
   }
 
-  const active = document.activeElement;
+  const active = doc.activeElement;
   if (active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT") && root.contains(active)) {
     const el = active as HTMLInputElement | HTMLTextAreaElement;
     const text = el.value.substring(el.selectionStart ?? 0, el.selectionEnd ?? 0).trim();
@@ -63,7 +67,7 @@ function openMapSwitcher(plugin: BranchChatMapPlugin): void {
 export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle, onNewSpider, onLoadMap }: BranchChatMapAppProps): ReactElement {
   const rootRef = useRef<HTMLDivElement>(null);
   const state = useBranchChatMapState(viewState);
-  const { map, activeNodeId, collapsedIds, error } = state;
+  const { map, activeNodeId, collapsedIds } = state;
   const activeNode = activeNodeId && map ? map.nodes[activeNodeId] : null;
   const language = plugin.settings.language;
   const path = viewState.getActivePath();
@@ -84,7 +88,8 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
 
   const createChild = useCallback(
     (anchorText?: string) => {
-      viewState.createChild(anchorText?.trim() || getSelectionInside(rootRef.current));
+      const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+      viewState.createChild(anchorText?.trim() || getSelectionInside(rootRef.current, doc));
     },
     [viewState],
   );
@@ -199,16 +204,18 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
     const root = rootRef.current;
     if (!root) return;
 
+    const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Tab" && plugin.settings.useTabToCreateChildNodes && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const container = rootRef.current;
         if (!container) return;
 
-        const sel = window.getSelection();
+        const sel = doc.getSelection();
         const inContainer = (node: Node | null) => node instanceof Node && container.contains(node);
 
         const hasSelection = (sel && sel.rangeCount > 0 && inContainer(sel.getRangeAt(0).commonAncestorContainer));
-        const inTextarea = document.activeElement?.tagName === "TEXTAREA" && inContainer(document.activeElement);
+        const inTextarea = doc.activeElement?.tagName === "TEXTAREA" && inContainer(doc.activeElement);
 
         if (!hasSelection && !inTextarea) return;
 
@@ -217,13 +224,13 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
         if (e.shiftKey) {
           viewState.goToParent();
         } else {
-          viewState.createChild(getSelectionInside(container) || undefined);
+          viewState.createChild(getSelectionInside(container, doc) || undefined);
         }
       }
     };
 
-    document.addEventListener("keydown", onKeyDown, { capture: true });
-    return () => document.removeEventListener("keydown", onKeyDown, { capture: true });
+    doc.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => doc.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [plugin.settings.useTabToCreateChildNodes, viewState]);
 
   if (!map || !activeNode) {

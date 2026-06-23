@@ -1,4 +1,4 @@
-import { Notice, Plugin, WorkspaceLeaf, type Editor } from "obsidian";
+import { Plugin, WorkspaceLeaf, type Editor } from "obsidian";
 import { DEFAULT_SETTINGS, BranchChatMapSettingTab } from "./settings";
 import type { BranchChatMapSettings } from "./types";
 import {
@@ -36,7 +36,7 @@ export default class BranchChatMapPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "open-spider",
+      id: "open-map",
       name: t(this.settings.language, "openMap"),
       callback: () => {
         void this.activateView();

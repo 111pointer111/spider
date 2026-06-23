@@ -1,5 +1,6 @@
 import { FuzzySuggestModal, Notice, type FuzzyMatch } from "obsidian";
 import type BranchChatMapPlugin from "../main";
+import { confirmDelete } from "./ConfirmModal";
 
 interface MapItem {
   id: string;
@@ -99,9 +100,7 @@ export class MapSwitcherModal extends FuzzySuggestModal<MapItem> {
     deleteBtn.setText("×");
     deleteBtn.onclick = async (e) => {
       e.stopPropagation();
-      const ok = this.language === "zh-CN"
-        ? window.confirm("确认删除此图谱？")
-        : window.confirm("Delete this map?");
+      const ok = await confirmDelete(this.plugin.app, mapItem.title);
       if (!ok) return;
 
       await this.plugin.store.repository.deleteMap(mapItem.id);

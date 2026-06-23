@@ -6,6 +6,10 @@ import type { BranchChatMapController } from "./BranchChatMapApp";
 import { getSelectionInside } from "./BranchChatMapApp";
 import { useActiveViewState } from "./useBranchChatMapState";
 
+interface ObsidianWindow {
+  activeDocument: Document;
+}
+
 interface BranchChatMapChatAppProps {
   plugin: BranchChatMapPlugin;
   onController(controller: BranchChatMapController): void;
@@ -25,7 +29,8 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
 
   const createChild = useCallback(
     (anchorText?: string) => {
-      viewState?.createChild(anchorText?.trim() || getSelectionInside(rootRef.current));
+      const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+      viewState?.createChild(anchorText?.trim() || getSelectionInside(rootRef.current, doc));
     },
     [viewState],
   );
@@ -145,16 +150,18 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
     const root = rootRef.current;
     if (!root) return;
 
+    const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Tab" && plugin.settings.useTabToCreateChildNodes && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const container = rootRef.current;
         if (!container) return;
 
-        const sel = window.getSelection();
+        const sel = doc.getSelection();
         const inContainer = (node: Node | null) => node instanceof Node && container.contains(node);
 
         const hasSelection = (sel && sel.rangeCount > 0 && inContainer(sel.getRangeAt(0).commonAncestorContainer));
-        const inTextarea = document.activeElement?.tagName === "TEXTAREA" && inContainer(document.activeElement);
+        const inTextarea = doc.activeElement?.tagName === "TEXTAREA" && inContainer(doc.activeElement);
 
         if (!hasSelection && !inTextarea) return;
 
@@ -163,14 +170,14 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         if (e.shiftKey) {
           viewState?.goToParent();
         } else {
-          viewState?.createChild(getSelectionInside(container) || undefined);
+          viewState?.createChild(getSelectionInside(container, doc) || undefined);
         }
       }
     };
 
-    document.addEventListener("keydown", onKeyDown, { capture: true });
-    return () => document.removeEventListener("keydown", onKeyDown, { capture: true });
-  }, [plugin.settings.useTabToCreateChildNodes, viewState, plugin.settings.language]);
+    doc.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => doc.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [plugin.settings.useTabToCreateChildNodes, viewState]);
 
   if (!node) {
     return (

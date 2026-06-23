@@ -3,6 +3,7 @@ import { Notice } from "obsidian";
 import type BranchChatMapPlugin from "../main";
 import { displayTitle, t } from "../i18n";
 import type { ChatMap, ChatMapId } from "../types";
+import { confirmDelete } from "./ConfirmModal";
 
 interface MapGalleryProps {
   plugin: BranchChatMapPlugin;
@@ -28,9 +29,7 @@ export function MapGallery({ plugin, onSelectMap, onNewMap }: MapGalleryProps): 
 
   const handleDelete = async (e: React.MouseEvent, mapId: ChatMapId) => {
     e.stopPropagation();
-    const ok = language === "zh-CN"
-      ? confirm("确认删除此图谱？此操作不可撤销。")
-      : confirm("Delete this map? This cannot be undone.");
+    const ok = await confirmDelete(plugin.app, mapId);
     if (!ok) return;
 
     const deleted = await plugin.store.repository.deleteMap(mapId);
