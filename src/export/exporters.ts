@@ -53,7 +53,9 @@ export interface ExportCanvasOptions {
   exportFolder?: string;
 }
 
-export interface BuildExportFilesOptions extends ExportCanvasOptions {}
+export interface BuildExportFilesOptions extends ExportCanvasOptions {
+  // Inherits all properties from ExportCanvasOptions
+}
 
 interface CanvasPosition {
   x: number;

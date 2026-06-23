@@ -15,28 +15,30 @@ interface ObsidianWindow {
 }
 
 export interface BranchChatMapController {
-  handleKeydown(event: KeyboardEvent): void;
-  createChild(anchorText?: string): void;
-  goToParent(): void;
-  summarizeCurrentNode(): Promise<void>;
-  exportMap(): Promise<void>;
+  handleKeydown(this: void, event: KeyboardEvent): void;
+  createChild(this: void, anchorText?: string): void;
+  goToParent(this: void): void;
+  summarizeCurrentNode(this: void): Promise<void>;
+  exportMap(this: void): Promise<void>;
 }
 
 interface BranchChatMapAppProps {
   plugin: BranchChatMapPlugin;
   viewState: ViewState;
-  onController(controller: BranchChatMapController): void;
-  setTabTitle(title: string): void;
-  onNewSpider(): void;
-  onLoadMap(mapId: ChatMapId): void;
+  onController(this: void, controller: BranchChatMapController): void;
+  setTabTitle(this: void, title: string): void;
+  onNewSpider(this: void): void;
+  onLoadMap(this: void, mapId: ChatMapId): void;
 }
 
-export function getSelectionInside(root: HTMLElement | null, doc: Document = document): string | undefined {
+export function getSelectionInside(root: HTMLElement | null, doc?: Document): string | undefined {
   if (!root) {
     return undefined;
   }
 
-  const active = doc.activeElement;
+  const documentRef = doc || document;
+  const active = documentRef.activeElement;
+
   if (active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT") && root.contains(active)) {
     const el = active as HTMLInputElement | HTMLTextAreaElement;
     const text = el.value.substring(el.selectionStart ?? 0, el.selectionEnd ?? 0).trim();
@@ -45,7 +47,7 @@ export function getSelectionInside(root: HTMLElement | null, doc: Document = doc
     }
   }
 
-  const selection = window.getSelection();
+  const selection = documentRef.getSelection();
   if (!selection || selection.rangeCount === 0) {
     return undefined;
   }
@@ -263,7 +265,7 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
           <button className="bcm-topbar-btn" onClick={() => viewState.autoLayout()} type="button" title={t(language, "autoLayout")}>
             {language === "zh-CN" ? "布局" : "Layout"}
           </button>
-          <button className="bcm-topbar-btn" onClick={() => viewState.exportMap()} type="button" title={t(language, "export")}>
+          <button className="bcm-topbar-btn" onClick={() => { void viewState.exportMap(); }} type="button" title={t(language, "export")}>
             {language === "zh-CN" ? "导出" : "Export"}
           </button>
         </div>

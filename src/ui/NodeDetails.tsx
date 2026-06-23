@@ -15,16 +15,16 @@ interface NodeDetailsProps {
   isPending: boolean;
   language: AppLanguage;
   streamingContent: string;
-  onCancel(): void;
-  onCreateChild(): void;
-  onDeleteNode(nodeId: NodeId): void;
-  onDraftChange(value: string): void;
-  onGoParent(): void;
-  onMarkUnderstood(): void;
-  onRetry(): void;
-  onSend(): void;
-  onSummarize(): void;
-  onTitleChange(title: string): void;
+  onCancel(this: void): void;
+  onCreateChild(this: void): void;
+  onDeleteNode(this: void, nodeId: NodeId): void;
+  onDraftChange(this: void, value: string): void;
+  onGoParent(this: void): void;
+  onMarkUnderstood(this: void): void;
+  onRetry(this: void): void;
+  onSend(this: void): void;
+  onSummarize(this: void): void;
+  onTitleChange(this: void, title: string): void;
 }
 
 export function NodeDetails({

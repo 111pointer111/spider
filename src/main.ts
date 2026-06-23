@@ -141,7 +141,7 @@ export default class BranchChatMapPlugin extends Plugin {
   async activateView(): Promise<void> {
     const leaf = await this.ensureMainTabView(true);
     if (leaf) {
-      this.app.workspace.revealLeaf(leaf);
+      await this.app.workspace.revealLeaf(leaf);
     }
     await this.ensureChatSidebarView(true);
   }
@@ -158,7 +158,7 @@ export default class BranchChatMapPlugin extends Plugin {
       type: VIEW_TYPE_BRANCH_CHAT_MAP,
       active: true,
     });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
 
     await this.ensureChatSidebarView(true);
   }
@@ -183,7 +183,7 @@ export default class BranchChatMapPlugin extends Plugin {
       type: VIEW_TYPE_BRANCH_CHAT_MAP,
       active: true,
     });
-    this.app.workspace.revealLeaf(leaf);
+    await this.app.workspace.revealLeaf(leaf);
 
     return leaf;
   }
@@ -204,7 +204,7 @@ export default class BranchChatMapPlugin extends Plugin {
     if (sideLeaf) {
       this.app.workspace.rightSplit.expand();
       if (openIfMissing) {
-        this.app.workspace.revealLeaf(sideLeaf);
+        await this.app.workspace.revealLeaf(sideLeaf);
       }
       return sideLeaf;
     }

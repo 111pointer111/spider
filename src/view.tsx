@@ -173,7 +173,7 @@ export class BranchChatMapView extends BranchChatMapBaseView {
           void this.plugin.newSpiderView();
         }}
         onLoadMap={(mapId) => {
-          this.viewState?.load(mapId);
+          void this.viewState?.load(mapId);
           this.plugin.settings.lastOpenedMapId = mapId;
           void this.plugin.saveSettings();
         }}

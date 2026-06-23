@@ -7,8 +7,8 @@ import { confirmDelete } from "./ConfirmModal";
 
 interface MapGalleryProps {
   plugin: BranchChatMapPlugin;
-  onSelectMap(mapId: ChatMapId): void;
-  onNewMap(): void;
+  onSelectMap(this: void, mapId: ChatMapId): void;
+  onNewMap(this: void): void;
 }
 
 interface MapEntry {
@@ -104,7 +104,7 @@ export function MapGallery({ plugin, onSelectMap, onNewMap }: MapGalleryProps): 
                       <button
                         className="bcm-gallery-card-delete"
                         type="button"
-                        onClick={(e) => handleDelete(e, entry.map.id)}
+                        onClick={(e) => { void handleDelete(e, entry.map.id); }}
                         aria-label={language === "zh-CN" ? "删除" : "Delete"}
                       >
                         &times;

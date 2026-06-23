@@ -12,7 +12,7 @@ interface ObsidianWindow {
 
 interface BranchChatMapChatAppProps {
   plugin: BranchChatMapPlugin;
-  onController(controller: BranchChatMapController): void;
+  onController(this: void, controller: BranchChatMapController): void;
 }
 
 export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChatAppProps): ReactElement {

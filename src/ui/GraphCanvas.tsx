@@ -70,9 +70,9 @@ interface GraphCanvasProps {
   activeNodeId: NodeId;
   collapsedIds: Set<NodeId>;
   language: AppLanguage;
-  onActivateNode(nodeId: NodeId): void;
-  onToggleCollapse(nodeId: NodeId): void;
-  onPositionChange(nodeId: NodeId, position: { x: number; y: number }): void;
+  onActivateNode(this: void, nodeId: NodeId): void;
+  onToggleCollapse(this: void, nodeId: NodeId): void;
+  onPositionChange(this: void, nodeId: NodeId, position: { x: number; y: number }): void;
 }
 
 function collectVisibleNodeIds(map: ChatMap, collapsedIds: Set<NodeId>): Set<NodeId> {
