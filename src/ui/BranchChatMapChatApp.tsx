@@ -6,10 +6,6 @@ import type { BranchChatMapController } from "./BranchChatMapApp";
 import { getSelectionInside } from "./BranchChatMapApp";
 import { useActiveViewState } from "./useBranchChatMapState";
 
-interface ObsidianWindow {
-  activeDocument: Document;
-}
-
 interface BranchChatMapChatAppProps {
   plugin: BranchChatMapPlugin;
   onController(this: void, controller: BranchChatMapController): void;
@@ -29,7 +25,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
 
   const createChild = useCallback(
     (anchorText?: string) => {
-      const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+      const doc = activeDocument;
       viewState?.createChild(anchorText?.trim() || getSelectionInside(rootRef.current, doc));
     },
     [viewState],
@@ -150,7 +146,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
     const root = rootRef.current;
     if (!root) return;
 
-    const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+    const doc = activeDocument;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Tab" && plugin.settings.useTabToCreateChildNodes && !e.metaKey && !e.ctrlKey && !e.altKey) {

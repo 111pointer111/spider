@@ -10,10 +10,6 @@ import { MapGallery } from "./MapGallery";
 import type { ViewState } from "../state/viewState";
 import type { ChatMapId } from "../types";
 
-interface ObsidianWindow {
-  activeDocument: Document;
-}
-
 export interface BranchChatMapController {
   handleKeydown(this: void, event: KeyboardEvent): void;
   createChild(this: void, anchorText?: string): void;
@@ -36,7 +32,7 @@ export function getSelectionInside(root: HTMLElement | null, doc?: Document): st
     return undefined;
   }
 
-  const documentRef = doc || document;
+  const documentRef = doc || activeDocument;
   const active = documentRef.activeElement;
 
   if (active && (active.tagName === "TEXTAREA" || active.tagName === "INPUT") && root.contains(active)) {
@@ -90,7 +86,7 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
 
   const createChild = useCallback(
     (anchorText?: string) => {
-      const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+      const doc = activeDocument;
       viewState.createChild(anchorText?.trim() || getSelectionInside(rootRef.current, doc));
     },
     [viewState],
@@ -206,7 +202,7 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
     const root = rootRef.current;
     if (!root) return;
 
-    const doc = (window as unknown as ObsidianWindow).activeDocument || document;
+    const doc = activeDocument;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Tab" && plugin.settings.useTabToCreateChildNodes && !e.metaKey && !e.ctrlKey && !e.altKey) {

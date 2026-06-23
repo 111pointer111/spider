@@ -175,7 +175,10 @@ export class OpenAICompatibleProvider implements AiProvider {
     }
 
     const baseUrl = this.settings.apiBaseUrl.replace(/\/+$/, "");
-    // Streaming requires fetch — requestUrl does not support ReadableStream
+    // Streaming requires fetch — Obsidian's requestUrl does not support
+    // ReadableStream / SSE chunks, so the streaming path is the one place
+    // where fetch is unavoidable. Sync requests in requestChatCompletion
+    // already use requestUrl.
     const response = await fetch(`${baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
