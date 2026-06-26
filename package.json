@@ -1,6 +1,6 @@
 {
   "name": "spider",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Obsidian plugin for Tab-driven infinite AI chat branches as a knowledge map.",
   "type": "module",
   "main": "main.js",

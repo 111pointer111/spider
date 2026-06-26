@@ -55,6 +55,13 @@
   container-type: inline-size;
 }
 
+.spider-confirm-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
 .bcm-loading {
   height: 100%;
   display: grid;

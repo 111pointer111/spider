@@ -28,10 +28,6 @@ export function confirmAction(app: App, options: ConfirmActionOptions): Promise<
     modal.contentEl.setText(options.message);
 
     const buttonRow = modal.contentEl.createDiv({ cls: "spider-confirm-row" });
-    buttonRow.style.display = "flex";
-    buttonRow.style.gap = "8px";
-    buttonRow.style.justifyContent = "flex-end";
-    buttonRow.style.marginTop = "16px";
 
     new ButtonComponent(buttonRow)
       .setButtonText(options.cancelText)
