@@ -26,6 +26,52 @@ function streamFromText(value: string): ReadableStream<Uint8Array> {
 }
 
 describe("OpenAICompatibleProvider", () => {
+  it("tests API configuration with a minimal non-streaming request", async () => {
+    const requestUrl = await import("obsidian").then((mod) => vi.mocked(mod.requestUrl));
+    requestUrl.mockResolvedValueOnce({
+      status: 200,
+      text: "",
+      json: { choices: [{ message: { content: "OK" } }] },
+      arrayBuffer: new ArrayBuffer(0),
+      headers: {},
+    });
+
+    const provider = new OpenAICompatibleProvider(settings);
+    const result = await provider.testConnection();
+
+    expect(result.ok).toBe(true);
+    expect(requestUrl).toHaveBeenCalledWith(expect.objectContaining({
+      url: "https://example.test/v1/chat/completions",
+      method: "POST",
+    }));
+  });
+
+  it("maps API test auth errors to friendly messages with details", async () => {
+    const requestUrl = await import("obsidian").then((mod) => vi.mocked(mod.requestUrl));
+    requestUrl.mockResolvedValueOnce({
+      status: 401,
+      text: "bad key",
+      json: {},
+      arrayBuffer: new ArrayBuffer(0),
+      headers: {},
+    });
+
+    const provider = new OpenAICompatibleProvider(settings);
+    const result = await provider.testConnection();
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("API Key");
+    expect(result.details).toContain("401");
+  });
+
+  it("validates missing model before testing API", async () => {
+    const provider = new OpenAICompatibleProvider({ ...settings, model: "" });
+    const result = await provider.testConnection();
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain("模型");
+  });
+
   it("streams OpenAI-compatible chunks", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(

@@ -24,6 +24,7 @@ interface BranchNodeData {
   collapsed: boolean;
   childCount: number;
   language: AppLanguage;
+  searchMatch: boolean;
   onToggleCollapse(nodeId: NodeId): void;
 }
 
@@ -35,7 +36,7 @@ const BranchNode = memo(function BranchNode({ data }: NodeProps<BranchFlowNode>)
     <div
       className={`bcm-graph-node ${data.active ? "is-active" : ""} ${data.inPath ? "is-path" : ""} ${
         data.node.status === "understood" ? "is-understood" : ""
-      }`}
+      } ${data.searchMatch ? "is-search-match" : ""}`}
     >
       <Handle type="target" position={Position.Left} />
       <div className="bcm-node-header">
@@ -70,6 +71,7 @@ interface GraphCanvasProps {
   activeNodeId: NodeId;
   collapsedIds: Set<NodeId>;
   language: AppLanguage;
+  searchMatchIds?: Set<NodeId>;
   onActivateNode(this: void, nodeId: NodeId): void;
   onToggleCollapse(this: void, nodeId: NodeId): void;
   onPositionChange(this: void, nodeId: NodeId, position: { x: number; y: number }): void;
@@ -115,6 +117,7 @@ function GraphCanvasInner({
   activeNodeId,
   collapsedIds,
   language,
+  searchMatchIds,
   onActivateNode,
   onToggleCollapse,
   onPositionChange,
@@ -136,10 +139,11 @@ function GraphCanvasInner({
           collapsed: collapsedIds.has(node.id),
           childCount: node.children.length,
           language,
+          searchMatch: searchMatchIds?.has(node.id) ?? false,
           onToggleCollapse,
         },
       }));
-  }, [activeNodeId, activePathIds, collapsedIds, language, map.nodes, onToggleCollapse, visibleIds]);
+  }, [activeNodeId, activePathIds, collapsedIds, language, map.nodes, onToggleCollapse, searchMatchIds, visibleIds]);
 
   const computedEdges = useMemo<Edge[]>(() => {
     return map.edges

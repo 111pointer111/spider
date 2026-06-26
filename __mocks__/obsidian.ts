@@ -1,10 +1,12 @@
-export const requestUrl = async () => ({
+import { vi } from "vitest";
+
+export const requestUrl = vi.fn(async () => ({
   status: 200,
   text: "",
   json: {},
   arrayBuffer: new ArrayBuffer(0),
   headers: {},
-});
+}));
 
 export const Notice = class Notice {
   constructor() {}

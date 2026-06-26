@@ -1,11 +1,14 @@
 import { FuzzySuggestModal, Notice, type FuzzyMatch } from "obsidian";
 import type BranchChatMapPlugin from "../main";
+import { displayTitle, t } from "../i18n";
 import { confirmDelete } from "./ConfirmModal";
 
 interface MapItem {
   id: string;
   title: string;
   nodeCount: number;
+  rootTitle: string;
+  summary: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -35,10 +38,13 @@ export class MapSwitcherModal extends FuzzySuggestModal<MapItem> {
     for (const map of available) {
       if (seen.has(map.id)) continue;
       seen.add(map.id);
+      const root = map.nodes[map.rootNodeId];
       result.push({
         id: map.id,
         title: map.title,
         nodeCount: Object.keys(map.nodes).length,
+        rootTitle: root?.title ?? "",
+        summary: root?.summary || root?.messages[0]?.content || "",
         createdAt: map.createdAt,
         updatedAt: map.updatedAt,
       });
@@ -51,6 +57,8 @@ export class MapSwitcherModal extends FuzzySuggestModal<MapItem> {
         id: om.id,
         title: om.title,
         nodeCount: om.nodeCount,
+        rootTitle: "",
+        summary: "",
         createdAt: "",
         updatedAt: "",
       });
@@ -91,10 +99,18 @@ export class MapSwitcherModal extends FuzzySuggestModal<MapItem> {
     const content = el.createDiv({ cls: "map-switcher-content" });
 
     const titleEl = content.createDiv({ cls: "map-switcher-title" });
-    titleEl.setText(mapItem.title);
+    titleEl.setText(displayTitle(this.plugin.settings.language, mapItem.title));
 
     const metaEl = content.createDiv({ cls: "map-switcher-meta" });
-    metaEl.setText(`${mapItem.nodeCount} nodes`);
+    metaEl.setText([
+      t(this.plugin.settings.language, "nodesCount", { count: mapItem.nodeCount }),
+      mapItem.updatedAt ? t(this.plugin.settings.language, "updatedAt", { time: new Date(mapItem.updatedAt).toLocaleString(this.plugin.settings.language) }) : "",
+    ].filter(Boolean).join(" · "));
+
+    if (mapItem.rootTitle || mapItem.summary) {
+      const summaryEl = content.createDiv({ cls: "map-switcher-summary" });
+      summaryEl.setText(mapItem.summary || mapItem.rootTitle);
+    }
 
     const deleteBtn = el.createEl("button", { cls: "map-switcher-delete" });
     deleteBtn.setText("×");
@@ -103,8 +119,18 @@ export class MapSwitcherModal extends FuzzySuggestModal<MapItem> {
       const ok = await confirmDelete(this.plugin.app, mapItem.title);
       if (!ok) return;
 
-      await this.plugin.store.repository.deleteMap(mapItem.id);
-      new Notice(this.language === "zh-CN" ? "图谱已删除" : "Map deleted");
+      try {
+        const removed = await this.plugin.store.repository.deleteMap(mapItem.id);
+        if (removed) {
+          new Notice(this.language === "zh-CN" ? "图谱已删除" : "Map deleted");
+        } else {
+          new Notice(this.language === "zh-CN" ? "未找到该图谱文件" : "Map file not found");
+        }
+      } catch (deleteError: unknown) {
+        const message = deleteError instanceof Error ? deleteError.message : String(deleteError);
+        new Notice(this.language === "zh-CN" ? `删除失败：${message}` : `Delete failed: ${message}`);
+      }
+
       await this.loadMaps();
       this.inputEl.dispatchEvent(new Event("input"));
     };

@@ -55,7 +55,7 @@ describe("exporters", () => {
 
     const files = buildExportFiles(finalMap);
     expect(files.map((file) => file.path)).toEqual(
-      expect.arrayContaining(["README.md", "index.md", "diagrams/mindmap.mermaid.md", "canvas/map.canvas", "data/map.json"]),
+      expect.arrayContaining(["README.md", "index.md", "diagrams/mindmap.mermaid.md", "canvas/map.canvas", "data/map.json", "data/README.md"]),
     );
 
     const readme = files.find((file) => file.path === "README.md");
@@ -65,6 +65,16 @@ describe("exporters", () => {
     expect(index?.content).toContain("## 快速信息");
     expect(index?.content).toContain("## 推荐阅读路线");
     expect(index?.content).toContain("[canvas/map.canvas](canvas/map.canvas)");
+
+    const dataReadme = files.find((file) => file.path === "data/README.md");
+    expect(dataReadme?.content).toContain("结构化数据");
+    expect(dataReadme?.content).toContain("| 节点数量 | 2 |");
+
+    const data = files.find((file) => file.path === "data/map.json");
+    expect(JSON.parse(data?.content ?? "{}")).toMatchObject({
+      id: finalMap.id,
+      rootNodeId: finalMap.rootNodeId,
+    });
 
     const rootNode = files.find((file) => file.path.startsWith("nodes/01-"));
     expect(rootNode?.content).toContain("## Canvas 卡片");
@@ -76,5 +86,16 @@ describe("exporters", () => {
     expect(childNode?.content).toContain("[Root question](01-Root-question.md)");
     expect(childNode?.content).toContain("## 对话记录");
     expect(childNode?.content).toContain("> [!question]");
+  });
+
+  it("exports user-facing files in English when requested", () => {
+    const map = createRootMap("AI learning");
+    const files = buildExportFiles(map, { language: "en" });
+    const index = files.find((file) => file.path === "index.md");
+    const canvas = JSON.parse(files.find((file) => file.path === "canvas/map.canvas")?.content ?? "{}") as JsonCanvasFile;
+
+    expect(index?.content).toContain("## Quick info");
+    expect(index?.content).toContain("No conversation yet");
+    expect(canvas.nodes.some((node) => node.type === "text" && node.text.includes("Overview"))).toBe(true);
   });
 });

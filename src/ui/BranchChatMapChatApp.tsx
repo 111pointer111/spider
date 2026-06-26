@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useRef, type ReactElement } from "react";
+import { Notice } from "obsidian";
 import type BranchChatMapPlugin from "../main";
 import { displayTitle, t } from "../i18n";
 import { NodeDetails } from "./NodeDetails";
 import type { BranchChatMapController } from "./BranchChatMapApp";
 import { getSelectionInside } from "./BranchChatMapApp";
+import { confirmAction, confirmDelete } from "./ConfirmModal";
 import { useActiveViewState } from "./useBranchChatMapState";
 
 interface BranchChatMapChatAppProps {
@@ -14,7 +16,7 @@ interface BranchChatMapChatAppProps {
 export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChatAppProps): ReactElement {
   const rootRef = useRef<HTMLDivElement>(null);
   const state = useActiveViewState(plugin);
-  const { map, activeNodeId, drafts, error, focusToken, pendingNodeId, streamingContent } = state;
+  const { map, activeNodeId, drafts, error, errorDetails, focusToken, pendingNodeId, streamingContent } = state;
   const node = activeNodeId && map ? map.nodes[activeNodeId] : null;
   const parent = node?.parentId && map ? map.nodes[node.parentId] : undefined;
   const language = plugin.settings.language;
@@ -30,6 +32,44 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
     },
     [viewState],
   );
+
+  const handleDeleteCurrentMap = useCallback(async () => {
+    const target = viewState?.getSnapshot().map;
+    if (!viewState || !target) {
+      return;
+    }
+
+    const ok = await confirmDelete(plugin.app, target.title);
+    if (!ok) {
+      return;
+    }
+
+    const removed = await viewState.deleteCurrentMap();
+    if (removed) {
+      new Notice(language === "zh-CN" ? "图谱已删除" : "Map deleted");
+    }
+  }, [language, plugin.app, viewState]);
+
+  const confirmAndDeleteNode = useCallback(async (nodeId: string) => {
+    if (!viewState) {
+      return;
+    }
+
+    const subtreeCount = viewState.countNodeSubtree(nodeId);
+    const childCount = Math.max(0, subtreeCount - 1);
+    const message = childCount > 0
+      ? t(language, "confirmDeleteSubtree", { count: childCount })
+      : t(language, "confirmDeleteNode");
+    const ok = await confirmAction(plugin.app, {
+      title: t(language, "deleteNode"),
+      message,
+      confirmText: t(language, "deleteNode"),
+      cancelText: language === "zh-CN" ? "取消" : "Cancel",
+    });
+    if (ok) {
+      viewState.deleteNode(nodeId);
+    }
+  }, [language, plugin.app, viewState]);
 
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
@@ -58,7 +98,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         const snap = vs?.getSnapshot();
         if (snap?.map && snap.activeNodeId && snap.activeNodeId !== snap.map.rootNodeId) {
           event.preventDefault();
-          vs?.deleteNode(snap.activeNodeId);
+          void confirmAndDeleteNode(snap.activeNodeId);
           return;
         }
       }
@@ -129,7 +169,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         }
       }
     },
-    [createChild, plugin.settings.useTabToCreateChildNodes, viewState],
+    [confirmAndDeleteNode, createChild, plugin.settings.useTabToCreateChildNodes, viewState],
   );
 
   useEffect(() => {
@@ -139,8 +179,9 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
       goToParent: () => viewState?.goToParent(),
       summarizeCurrentNode: () => viewState?.summarizeCurrentNode() ?? Promise.resolve(),
       exportMap: () => viewState?.exportMap() ?? Promise.resolve(),
+      deleteCurrentMap: handleDeleteCurrentMap,
     });
-  }, [createChild, handleKeydown, onController, viewState]);
+  }, [createChild, handleDeleteCurrentMap, handleKeydown, onController, viewState]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -197,19 +238,22 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         path={path}
         draft={drafts[node.id] ?? ""}
         error={error}
+        errorDetails={errorDetails}
         focusToken={focusToken}
         isPending={pendingNodeId === node.id}
+        canUseAi={Boolean(plugin.settings.apiKey && plugin.settings.model)}
         language={language}
         streamingContent={streamingContent[node.id] ?? ""}
         onCancel={() => vs?.cancelGeneration()}
         onCreateChild={() => createChild()}
-        onDeleteNode={(nodeId) => vs?.deleteNode(nodeId)}
+        onDeleteNode={(nodeId) => { void confirmAndDeleteNode(nodeId); }}
         onDraftChange={(value) => vs?.updateDraft(node.id, value)}
         onGoParent={() => vs?.goToParent()}
         onMarkUnderstood={() => vs?.markUnderstood()}
         onRetry={() => void vs?.retryAssistant()}
         onSend={() => void vs?.sendMessage()}
         onSummarize={() => void vs?.summarizeCurrentNode()}
+        onStatusChange={(status) => vs?.updateCurrentNodeStatus(status)}
         onTitleChange={(title) => vs?.updateCurrentNodeTitle(title)}
       />
     </div>

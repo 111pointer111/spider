@@ -78,6 +78,12 @@ abstract class BranchChatMapBaseView extends ItemView {
     });
   }
 
+  deleteCurrentMap(): void {
+    this.runWhenReady((controller) => {
+      void controller.deleteCurrentMap();
+    });
+  }
+
   protected abstract renderApp(onController: (controller: BranchChatMapController) => void): ReactElement;
 
   protected abstract getContentClassName(): string;

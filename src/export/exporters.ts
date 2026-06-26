@@ -1,4 +1,4 @@
-import type { ChatMap, ChatMessage, ChatNode } from "../types";
+import type { AppLanguage, ChatMap, ChatMessage, ChatNode } from "../types";
 import { escapeMermaid, slugifyFileName } from "../utils/text";
 
 type CanvasSide = "top" | "right" | "bottom" | "left";
@@ -51,6 +51,7 @@ export interface ExportFile {
 
 export interface ExportCanvasOptions {
   exportFolder?: string;
+  language?: AppLanguage;
 }
 
 export type BuildExportFilesOptions = ExportCanvasOptions;
@@ -69,28 +70,185 @@ const CANVAS_GROUP_PADDING = 70;
 const CANVAS_OVERVIEW_WIDTH = 460;
 const CANVAS_OVERVIEW_HEIGHT = 260;
 
+interface ExportLabels {
+  ai: string;
+  anchor: string;
+  archived: string;
+  canvasCard: string;
+  canvasView: string;
+  childNodes: string;
+  children: string;
+  conversation: string;
+  createdAt: string;
+  dataPurpose: string;
+  dataReadmeTitle: string;
+  dataReadmeUsage: string;
+  edgeCount: string;
+  exportedPackage: string;
+  fileStructure: string;
+  fullConversationHint: string;
+  graphHome: string;
+  indexEntry: string;
+  languageDepth(depth: number): string;
+  mapJson: string;
+  mapJsonDescription: string;
+  mermaid: string;
+  mermaidPreview: string;
+  mermaidTitleSuffix: string;
+  missingRoot: string;
+  navigation: string;
+  noChildren: string;
+  noConversation: string;
+  noParentRoot: string;
+  noSummary: string;
+  nodeCount: string;
+  nodeInfo: string;
+  nodeSummary: string;
+  nodesFolder: string;
+  open: string;
+  overview: string;
+  parent: string;
+  question: string;
+  quickInfo: string;
+  rawData: string;
+  readingRoute: string;
+  rootQuestion: string;
+  status: string;
+  system: string;
+  updatedAt: string;
+  usageAdvice: string;
+  user: string;
+  understood: string;
+}
+
+function exportLabels(language: AppLanguage = "zh-CN"): ExportLabels {
+  if (language === "en") {
+    return {
+      ai: "AI",
+      anchor: "Anchor",
+      archived: "Archived",
+      canvasCard: "Canvas card",
+      canvasView: "Canvas view",
+      childNodes: "Child nodes",
+      children: "Children",
+      conversation: "Conversation",
+      createdAt: "Created",
+      dataPurpose: "Use this file for backup, debugging, or future import support.",
+      dataReadmeTitle: "Structured data",
+      dataReadmeUsage: "The JSON file contains the complete local Spider map: nodes, edges, messages, positions, timestamps, and status values.",
+      edgeCount: "Edge count",
+      exportedPackage: "spider export package",
+      fileStructure: "File structure",
+      fullConversationHint: "Start at the root question, follow arrows for child questions, and open each Markdown file for the full conversation.",
+      graphHome: "Map home",
+      indexEntry: "Obsidian entry note",
+      languageDepth: (depth) => `Depth ${depth}`,
+      mapJson: "map.json",
+      mapJsonDescription: "Raw structured data",
+      mermaid: "Mermaid map",
+      mermaidPreview: "Mermaid preview",
+      mermaidTitleSuffix: "mindmap",
+      missingRoot: "No root node found.",
+      navigation: "Navigation",
+      noChildren: "No child nodes",
+      noConversation: "No conversation yet",
+      noParentRoot: "No parent; this is the root node",
+      noSummary: "No summary yet",
+      nodeCount: "Node count",
+      nodeInfo: "Node info",
+      nodeSummary: "Node summary",
+      nodesFolder: "One Markdown file per node",
+      open: "Open",
+      overview: "Overview",
+      parent: "Parent",
+      question: "Question",
+      quickInfo: "Quick info",
+      rawData: "Raw data",
+      readingRoute: "Recommended reading route",
+      rootQuestion: "Root question",
+      status: "Status",
+      system: "System",
+      updatedAt: "Updated",
+      usageAdvice: "Reading tips",
+      user: "You",
+      understood: "Understood",
+    };
+  }
+
+  return {
+    ai: "AI",
+    anchor: "原文锚点",
+    archived: "已归档",
+    canvasCard: "Canvas 卡片",
+    canvasView: "Canvas 视图",
+    childNodes: "子问题",
+    children: "子节点",
+    conversation: "对话记录",
+    createdAt: "创建时间",
+    dataPurpose: "这个文件可用于备份、调试，以及未来的重新导入支持。",
+    dataReadmeTitle: "结构化数据",
+    dataReadmeUsage: "JSON 文件包含完整的本地 Spider 图谱：节点、连线、消息、位置、时间戳和状态。",
+    edgeCount: "连线数量",
+    exportedPackage: "spider 导出包",
+    fileStructure: "文件结构",
+    fullConversationHint: "从根问题开始，沿箭头阅读每个子问题。节点卡片只展示摘要，完整对话请打开对应 Markdown 文件。",
+    graphHome: "图谱首页",
+    indexEntry: "Obsidian 内的图谱首页",
+    languageDepth: (depth) => `第 ${depth} 层`,
+    mapJson: "map.json",
+    mapJsonDescription: "原始结构化数据",
+    mermaid: "Mermaid 图",
+    mermaidPreview: "Mermaid 预览",
+    mermaidTitleSuffix: "思维导图",
+    missingRoot: "缺少根节点",
+    navigation: "导航",
+    noChildren: "暂无",
+    noConversation: "暂无对话",
+    noParentRoot: "无，这是根节点",
+    noSummary: "暂无总结",
+    nodeCount: "节点数量",
+    nodeInfo: "节点信息",
+    nodeSummary: "节点总结",
+    nodesFolder: "每个节点的完整对话记录",
+    open: "进行中",
+    overview: "总览",
+    parent: "父节点",
+    question: "问题",
+    quickInfo: "快速信息",
+    rawData: "原始数据",
+    readingRoute: "推荐阅读路线",
+    rootQuestion: "根问题",
+    status: "状态",
+    system: "系统",
+    updatedAt: "更新时间",
+    usageAdvice: "使用建议",
+    user: "你",
+    understood: "已理解",
+  };
+}
+
 function nodeHeading(level: number): string {
   return "#".repeat(Math.min(level, 6));
 }
 
-function roleName(role: ChatMessage["role"]): string {
+function roleName(role: ChatMessage["role"], labels: ExportLabels): string {
   if (role === "user") {
-    return "你";
+    return labels.user;
   }
 
   if (role === "assistant") {
-    return "AI";
+    return labels.ai;
   }
 
-  return "系统";
+  return labels.system;
 }
 
 function firstUserQuestion(node: ChatNode): string | undefined {
   return node.messages.find((message) => message.role === "user")?.content.trim();
 }
 
-function nodeSummaryLine(node: ChatNode): string {
-  return node.summary || firstUserQuestion(node) || node.anchorText || "暂无总结";
+function nodeSummaryLine(node: ChatNode, labels: ExportLabels): string {
+  return node.summary || firstUserQuestion(node) || node.anchorText || labels.noSummary;
 }
 
 function formatDateTime(value: string): string {
@@ -157,16 +315,16 @@ function markdownLink(label: string, path: string): string {
   return `[${label}](${encodeURI(path).replaceAll("%2F", "/")})`;
 }
 
-function nodeStatusLabel(node: ChatNode): string {
+function nodeStatusLabel(node: ChatNode, labels: ExportLabels): string {
   if (node.status === "understood") {
-    return "已理解";
+    return labels.understood;
   }
 
   if (node.status === "archived") {
-    return "已归档";
+    return labels.archived;
   }
 
-  return "进行中";
+  return labels.open;
 }
 
 function nodeCanvasColor(node: ChatNode, isRoot: boolean): CanvasColor {
@@ -206,12 +364,12 @@ function renderCallout(title: string, body?: string): string[] {
   return [`> [!note] ${title}`, ...body.trim().split(/\r?\n/).map((line) => `> ${line}`), ""];
 }
 
-function renderMessage(message: ChatMessage): string[] {
+function renderMessage(message: ChatMessage, labels: ExportLabels): string[] {
   const calloutType = message.role === "user" ? "question" : message.role === "assistant" ? "info" : "note";
   const body = message.content.trim();
 
   return [
-    `> [!${calloutType}] ${roleName(message.role)} · ${formatDateTime(message.createdAt)}`,
+    `> [!${calloutType}] ${roleName(message.role, labels)} · ${formatDateTime(message.createdAt)}`,
     ...(body ? body.split(/\r?\n/).map((line) => `> ${line}`) : [">"]),
     "",
   ];
@@ -221,6 +379,7 @@ function renderNodeMarkdown(
   map: ChatMap,
   node: ChatNode,
   depth: number,
+  labels: ExportLabels,
   nodeFileNames?: ReadonlyMap<string, string>,
 ): string {
   const lines: string[] = [];
@@ -230,69 +389,69 @@ function renderNodeMarkdown(
 
   lines.push(`${nodeHeading(depth)} ${node.title}`);
   lines.push("");
-  lines.push("## Canvas 卡片");
+  lines.push(`## ${labels.canvasCard}`);
   lines.push("");
   lines.push(`> [!summary] ${node.title}`);
-  lines.push(`> 状态：${nodeStatusLabel(node)}`);
-  lines.push(`> 摘要：${nodeSummaryLine(node)}`);
+  lines.push(`> ${labels.status}: ${nodeStatusLabel(node, labels)}`);
+  lines.push(`> ${labels.nodeSummary}: ${nodeSummaryLine(node, labels)}`);
   if (node.anchorText) {
-    lines.push(`> 锚点：${node.anchorText}`);
+    lines.push(`> ${labels.anchor}: ${node.anchorText}`);
   }
   const question = firstUserQuestion(node);
   if (question) {
-    lines.push(`> 问题：${question}`);
+    lines.push(`> ${labels.question}: ${question}`);
   }
   lines.push("");
 
-  lines.push("## 导航");
+  lines.push(`## ${labels.navigation}`);
   lines.push("");
-  lines.push(`- 图谱首页：${markdownLink(map.title, "../index.md")}`);
-  lines.push(`- Canvas 视图：${markdownLink("map.canvas", "../canvas/map.canvas")}`);
+  lines.push(`- ${labels.graphHome}: ${markdownLink(map.title, "../index.md")}`);
+  lines.push(`- ${labels.canvasView}: ${markdownLink("map.canvas", "../canvas/map.canvas")}`);
   if (parent && parentFileName) {
-    lines.push(`- 父节点：${markdownLink(parent.title, parentFileName)}`);
+    lines.push(`- ${labels.parent}: ${markdownLink(parent.title, parentFileName)}`);
   } else {
-    lines.push("- 父节点：无，这是根节点");
+    lines.push(`- ${labels.parent}: ${labels.noParentRoot}`);
   }
   if (children.length > 0) {
     const childLinks = children.map((child) => {
       const fileName = nodeFileNames?.get(child.id) ?? `${slugifyFileName(child.title)}.md`;
       return markdownLink(child.title, fileName);
     });
-    lines.push(`- 子节点：${childLinks.join("、")}`);
+    lines.push(`- ${labels.children}: ${childLinks.join("、")}`);
   } else {
-    lines.push("- 子节点：暂无");
+    lines.push(`- ${labels.children}: ${labels.noChildren}`);
   }
   lines.push("");
 
-  lines.push("## 节点信息");
+  lines.push(`## ${labels.nodeInfo}`);
   lines.push("");
-  lines.push(`- 状态：${node.status}`);
-  lines.push(`- 子节点：${node.children.length}`);
-  lines.push(`- 创建时间：${formatDateTime(node.createdAt)}`);
-  lines.push(`- 更新时间：${formatDateTime(node.updatedAt)}`);
+  lines.push(`- ${labels.status}: ${nodeStatusLabel(node, labels)}`);
+  lines.push(`- ${labels.children}: ${node.children.length}`);
+  lines.push(`- ${labels.createdAt}: ${formatDateTime(node.createdAt)}`);
+  lines.push(`- ${labels.updatedAt}: ${formatDateTime(node.updatedAt)}`);
   if (parent) {
-    lines.push(`- 父节点：${parentFileName ? markdownLink(parent.title, parentFileName) : parent.title}`);
+    lines.push(`- ${labels.parent}: ${parentFileName ? markdownLink(parent.title, parentFileName) : parent.title}`);
   }
   lines.push("");
 
-  lines.push(...renderCallout("节点总结", node.summary));
-  lines.push(...renderCallout("原文锚点", node.anchorText));
+  lines.push(...renderCallout(labels.nodeSummary, node.summary));
+  lines.push(...renderCallout(labels.anchor, node.anchorText));
 
   if (node.messages.length > 0) {
-    lines.push("## 对话记录");
+    lines.push(`## ${labels.conversation}`);
     lines.push("");
     for (const message of node.messages) {
-      lines.push(...renderMessage(message));
+      lines.push(...renderMessage(message, labels));
     }
   }
 
   if (children.length > 0) {
-    lines.push("## 子问题");
+    lines.push(`## ${labels.childNodes}`);
     lines.push("");
     for (const child of children) {
       const childFileName = nodeFileNames?.get(child.id);
       const link = childFileName ? markdownLink(child.title, childFileName) : `[[${child.title}]]`;
-      lines.push(`- ${link}：${nodeSummaryLine(child)}`);
+      lines.push(`- ${link}: ${nodeSummaryLine(child, labels)}`);
     }
     lines.push("");
   }
@@ -300,13 +459,14 @@ function renderNodeMarkdown(
   return lines.join("\n").trimEnd() + "\n";
 }
 
-export function exportMarkdown(map: ChatMap): string {
+export function exportMarkdown(map: ChatMap, language: AppLanguage = "zh-CN"): string {
+  const labels = exportLabels(language);
   const root = map.nodes[map.rootNodeId];
   if (!root) {
-    return `# ${map.title}\n\nNo root node found.\n`;
+    return `# ${map.title}\n\n${labels.missingRoot}\n`;
   }
 
-  const sections = walkNodes(map).map((node) => renderNodeMarkdown(map, node, Math.min(depthOf(map, node) + 2, 6)));
+  const sections = walkNodes(map).map((node) => renderNodeMarkdown(map, node, Math.min(depthOf(map, node) + 2, 6), labels));
   return [`# ${map.title}`, "", ...sections].join("\n").trimEnd() + "\n";
 }
 
@@ -389,7 +549,7 @@ function buildCanvasLayout(map: ChatMap, nodes: ChatNode[]): Map<string, CanvasP
   return positions;
 }
 
-function buildCanvasGroups(positions: Map<string, CanvasPosition>): JsonCanvasGroupNode[] {
+function buildCanvasGroups(positions: Map<string, CanvasPosition>, labels: ExportLabels): JsonCanvasGroupNode[] {
   const byDepth = new Map<number, CanvasPosition[]>();
   for (const position of positions.values()) {
     const level = byDepth.get(position.depth) ?? [];
@@ -407,7 +567,7 @@ function buildCanvasGroups(positions: Map<string, CanvasPosition>): JsonCanvasGr
       return {
         id: `group-depth-${depth}`,
         type: "group",
-        label: depth === 0 ? "根问题" : `第 ${depth} 层`,
+        label: depth === 0 ? labels.rootQuestion : labels.languageDepth(depth),
         x,
         y: minY - CANVAS_GROUP_PADDING,
         width: CANVAS_NODE_WIDTH + CANVAS_GROUP_PADDING * 2,
@@ -422,6 +582,7 @@ function canvasNodeFilePath(fileName: string, options: ExportCanvasOptions): str
 }
 
 export function exportCanvas(map: ChatMap, options: ExportCanvasOptions = {}): string {
+  const labels = exportLabels(options.language);
   const root = map.nodes[map.rootNodeId];
   if (!root) {
     const canvas: JsonCanvasFile = {
@@ -429,7 +590,7 @@ export function exportCanvas(map: ChatMap, options: ExportCanvasOptions = {}): s
         {
           id: "overview",
           type: "text",
-          text: `# ${map.title}\n\nNo root node found.`,
+          text: `# ${map.title}\n\n${labels.missingRoot}`,
           x: 0,
           y: 0,
           width: CANVAS_OVERVIEW_WIDTH,
@@ -446,7 +607,7 @@ export function exportCanvas(map: ChatMap, options: ExportCanvasOptions = {}): s
   const nodes = walkNodes(map);
   const nodeFileNames = new Map(nodes.map((node, index) => [node.id, nodeFileName(index, node)]));
   const positions = buildCanvasLayout(map, nodes);
-  const groups = buildCanvasGroups(positions);
+  const groups = buildCanvasGroups(positions, labels);
   const minY = Math.min(...[...positions.values()].map((position) => position.y));
 
   const canvas: JsonCanvasFile = {
@@ -458,15 +619,15 @@ export function exportCanvas(map: ChatMap, options: ExportCanvasOptions = {}): s
         text: [
           `# ${map.title}`,
           "",
-          "> [!summary] 总览",
-          `> ${nodeSummaryLine(root)}`,
+          `> [!summary] ${labels.overview}`,
+          `> ${nodeSummaryLine(root, labels)}`,
           "",
-          `- 根问题：${root.title}`,
-          `- 节点数量：${nodes.length}`,
-          `- 连线数量：${map.edges.length}`,
-          `- 图谱首页：${markdownLink("index.md", joinExportPath(options.exportFolder, "index.md"))}`,
+          `- ${labels.rootQuestion}: ${root.title}`,
+          `- ${labels.nodeCount}: ${nodes.length}`,
+          `- ${labels.edgeCount}: ${map.edges.length}`,
+          `- ${labels.graphHome}: ${markdownLink("index.md", joinExportPath(options.exportFolder, "index.md"))}`,
           "",
-          "从根问题开始，沿箭头阅读每个子问题。节点卡片只展示摘要，完整对话请打开对应 Markdown 文件。",
+          labels.fullConversationHint,
         ].join("\n"),
         x: -CANVAS_OVERVIEW_WIDTH - 120,
         y: minY - CANVAS_GROUP_PADDING,
@@ -482,7 +643,7 @@ export function exportCanvas(map: ChatMap, options: ExportCanvasOptions = {}): s
           id: node.id,
           type: "file" as const,
           file: canvasNodeFilePath(fileName, options),
-          subpath: "#Canvas 卡片",
+          subpath: `#${labels.canvasCard}`,
           x: position.x,
           y: position.y,
           width: CANVAS_NODE_WIDTH,
@@ -507,60 +668,64 @@ export function exportCanvas(map: ChatMap, options: ExportCanvasOptions = {}): s
 }
 
 export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions = {}): ExportFile[] {
+  const labels = exportLabels(options.language);
   const root = map.nodes[map.rootNodeId];
   const nodes = walkNodes(map);
   const nodeFileNames = new Map(nodes.map((node, index) => [node.id, nodeFileName(index, node)]));
   const mindmap = exportMermaidMindmap(map);
-  const rootSummary = root ? nodeSummaryLine(root) : "No root node found.";
+  const rootSummary = root ? nodeSummaryLine(root, labels) : labels.missingRoot;
   const rootFileName = root ? nodeFileNames.get(root.id) : undefined;
   const nodeIndexLines = nodes.map((node, index) => {
     const indent = "  ".repeat(depthOf(map, node));
     const fileName = nodeFileNames.get(node.id) ?? nodeFileName(index, node);
-    return `${indent}- [${node.title}](nodes/${fileName})：${nodeSummaryLine(node)}`;
+    return `${indent}- [${node.title}](nodes/${fileName}): ${nodeSummaryLine(node, labels)}`;
   });
+  const isConversationEmpty = nodes.every((node) => node.messages.length === 0);
 
   const indexLines = [
     `# ${map.title}`,
     "",
-    "> [!summary] 总览",
+    `> [!summary] ${labels.overview}`,
     `> ${rootSummary}`,
     "",
-    "## 快速信息",
+    "## " + labels.quickInfo,
     "",
-    "| 项目 | 内容 |",
+    "| Item | Value |",
     "| --- | --- |",
-    `| 根问题 | ${rootFileName && root ? `[${root.title}](nodes/${rootFileName})` : root?.title ?? "缺少根节点"} |`,
-    `| 节点数量 | ${nodes.length} |`,
-    `| 连线数量 | ${map.edges.length} |`,
-    `| 创建时间 | ${formatDateTime(map.createdAt)} |`,
-    `| 更新时间 | ${formatDateTime(map.updatedAt)} |`,
+    `| ${labels.rootQuestion} | ${rootFileName && root ? `[${root.title}](nodes/${rootFileName})` : root?.title ?? labels.missingRoot} |`,
+    `| ${labels.nodeCount} | ${nodes.length} |`,
+    `| ${labels.edgeCount} | ${map.edges.length} |`,
+    `| ${labels.createdAt} | ${formatDateTime(map.createdAt)} |`,
+    `| ${labels.updatedAt} | ${formatDateTime(map.updatedAt)} |`,
     "",
-    "## 入口",
+    "## " + labels.indexEntry,
     "",
-    `- 知识导图：${markdownLink("canvas/map.canvas", "canvas/map.canvas")}`,
-    `- Mermaid 图：${markdownLink("mindmap.mermaid.md", "diagrams/mindmap.mermaid.md")}`,
-    `- 原始数据：${markdownLink("map.json", "data/map.json")}`,
+    `- ${labels.canvasView}: ${markdownLink("canvas/map.canvas", "canvas/map.canvas")}`,
+    `- ${labels.mermaid}: ${markdownLink("mindmap.mermaid.md", "diagrams/mindmap.mermaid.md")}`,
+    `- ${labels.rawData}: ${markdownLink("map.json", "data/map.json")}`,
+    `- ${labels.dataReadmeTitle}: ${markdownLink("README.md", "data/README.md")}`,
     "",
-    "## 推荐阅读路线",
+    "## " + labels.readingRoute,
     "",
-    ...nodeIndexLines,
+    ...(nodeIndexLines.length > 0 ? nodeIndexLines : [`- ${labels.noConversation}`]),
+    ...(isConversationEmpty ? [`- ${labels.noConversation}`] : []),
     "",
-    "## 文件结构",
+    "## " + labels.fileStructure,
     "",
-    "- `README.md`：总览和入口",
-    "- `index.md`：Obsidian 内的图谱首页",
-    "- `nodes/`：每个节点的完整对话记录",
-    "- `diagrams/mindmap.mermaid.md`：Mermaid 思维导图",
-    "- `canvas/map.canvas`：Obsidian Canvas 图谱",
-    "- `data/map.json`：原始结构化数据",
+    `- \`README.md\`: ${labels.overview}`,
+    `- \`index.md\`: ${labels.indexEntry}`,
+    `- \`nodes/\`: ${labels.nodesFolder}`,
+    `- \`diagrams/mindmap.mermaid.md\`: ${labels.mermaid}`,
+    `- \`canvas/map.canvas\`: ${labels.canvasView}`,
+    `- \`data/map.json\`: ${labels.mapJsonDescription}`,
+    `- \`data/README.md\`: ${labels.dataReadmeTitle}`,
     "",
-    "## 使用建议",
+    "## " + labels.usageAdvice,
     "",
-    "- 从根问题开始读，然后沿着子问题向下钻。",
-    "- 如果要继续编辑标题，回到 spider 里修改节点标题后重新导出。",
-    "- `canvas/map.canvas` 适合在 Obsidian Canvas 里打开查看整体关系。",
+    `- ${labels.fullConversationHint}`,
+    `- ${labels.dataPurpose}`,
     "",
-    "## Mermaid 预览",
+    "## " + labels.mermaidPreview,
     "",
     "```mermaid",
     mindmap.trimEnd(),
@@ -571,19 +736,39 @@ export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions 
   const readmeContent = [
     `# ${map.title}`,
     "",
-    "> [!summary] spider 导出包",
+    `> [!summary] ${labels.exportedPackage}`,
     `> ${rootSummary}`,
     "",
-    `Obsidian 内建议从 ${markdownLink("index.md", "index.md")} 或 ${markdownLink("canvas/map.canvas", "canvas/map.canvas")} 开始阅读。`,
+    `${labels.fullConversationHint} ${markdownLink("index.md", "index.md")} / ${markdownLink("canvas/map.canvas", "canvas/map.canvas")}`,
     "",
-    "## 文件入口",
+    "## " + labels.indexEntry,
     "",
-    `- ${markdownLink("index.md", "index.md")}：图谱首页，包含推荐阅读路线和节点索引`,
-    `- ${markdownLink("canvas/map.canvas", "canvas/map.canvas")}：可视化知识导图`,
-    `- ${markdownLink("diagrams/mindmap.mermaid.md", "diagrams/mindmap.mermaid.md")}：Mermaid 思维导图`,
-    `- ${markdownLink("data/map.json", "data/map.json")}：原始结构化数据`,
+    `- ${markdownLink("index.md", "index.md")}: ${labels.graphHome}`,
+    `- ${markdownLink("canvas/map.canvas", "canvas/map.canvas")}: ${labels.canvasView}`,
+    `- ${markdownLink("diagrams/mindmap.mermaid.md", "diagrams/mindmap.mermaid.md")}: ${labels.mermaid}`,
+    `- ${markdownLink("data/map.json", "data/map.json")}: ${labels.mapJsonDescription}`,
+    `- ${markdownLink("data/README.md", "data/README.md")}: ${labels.dataReadmeTitle}`,
     "",
   ].join("\n");
+  const dataReadmeContent = [
+    `# ${labels.dataReadmeTitle}`,
+    "",
+    labels.dataReadmeUsage,
+    "",
+    "| Item | Value |",
+    "| --- | --- |",
+    `| ${labels.rootQuestion} | ${root?.title ?? labels.missingRoot} |`,
+    `| Root node ID | ${map.rootNodeId} |`,
+    `| ${labels.nodeCount} | ${nodes.length} |`,
+    `| ${labels.edgeCount} | ${map.edges.length} |`,
+    `| ${labels.createdAt} | ${formatDateTime(map.createdAt)} |`,
+    `| ${labels.updatedAt} | ${formatDateTime(map.updatedAt)} |`,
+    "",
+    `- \`${labels.mapJson}\`: ${labels.mapJsonDescription}`,
+    `- ${labels.dataPurpose}`,
+    isConversationEmpty ? `- ${labels.noConversation}` : "",
+    "",
+  ].filter(Boolean).join("\n");
 
   return [
     {
@@ -596,11 +781,11 @@ export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions 
     },
     ...nodes.map((node, index) => ({
       path: `nodes/${nodeFileNames.get(node.id) ?? nodeFileName(index, node)}`,
-      content: renderNodeMarkdown(map, node, 1, nodeFileNames),
+      content: renderNodeMarkdown(map, node, 1, labels, nodeFileNames),
     })),
     {
       path: "diagrams/mindmap.mermaid.md",
-      content: `# ${map.title} 思维导图\n\n\`\`\`mermaid\n${mindmap}\`\`\`\n`,
+      content: `# ${map.title} ${labels.mermaidTitleSuffix}\n\n\`\`\`mermaid\n${mindmap}\`\`\`\n`,
     },
     {
       path: "canvas/map.canvas",
@@ -609,6 +794,10 @@ export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions 
     {
       path: "data/map.json",
       content: `${JSON.stringify(map, null, 2)}\n`,
+    },
+    {
+      path: "data/README.md",
+      content: dataReadmeContent,
     },
   ];
 }

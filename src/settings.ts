@@ -1,8 +1,9 @@
-import { App, PluginSettingTab, Setting } from "obsidian";
+import { App, Notice, PluginSettingTab, Setting } from "obsidian";
 import type BranchChatMapPlugin from "./main";
 import { DEFAULT_EXPORT_DIR } from "./constants";
 import type { BranchChatMapSettings } from "./types";
 import { t } from "./i18n";
+import { OpenAICompatibleProvider, type ApiTestResult } from "./ai/openAICompatibleProvider";
 
 export const DEFAULT_SETTINGS: BranchChatMapSettings = {
   language: "zh-CN",
@@ -19,6 +20,8 @@ export const DEFAULT_SETTINGS: BranchChatMapSettings = {
 
 export class BranchChatMapSettingTab extends PluginSettingTab {
   private readonly plugin: BranchChatMapPlugin;
+  private apiTestResult: ApiTestResult | null = null;
+  private isTestingApi = false;
 
   constructor(app: App, plugin: BranchChatMapPlugin) {
     super(app, plugin);
@@ -86,6 +89,28 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
             await this.plugin.saveSettings();
           });
       });
+
+    const apiTestSetting = new Setting(containerEl)
+      .setName(t(language, "apiTest"))
+      .setDesc(this.apiTestResult ? formatApiTestResult(this.apiTestResult) : t(language, "settingModelDesc"));
+
+    apiTestSetting.addButton((button) => {
+      button
+        .setButtonText(this.isTestingApi ? t(language, "apiTesting") : t(language, "apiTest"))
+        .setDisabled(this.isTestingApi)
+        .onClick(async () => {
+          this.isTestingApi = true;
+          this.apiTestResult = null;
+          this.display();
+
+          const provider = new OpenAICompatibleProvider(this.plugin.settings);
+          const result = await provider.testConnection();
+          this.apiTestResult = result;
+          this.isTestingApi = false;
+          new Notice(result.message);
+          this.display();
+        });
+    });
 
     new Setting(containerEl)
       .setName(t(language, "settingExportFolderName"))
@@ -160,4 +185,12 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
   }
+}
+
+function formatApiTestResult(result: ApiTestResult): string {
+  if (result.ok) {
+    return result.message;
+  }
+
+  return result.details ? `${result.message}\n${result.details}` : result.message;
 }

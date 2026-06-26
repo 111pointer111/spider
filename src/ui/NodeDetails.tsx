@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactElement } from "react";
 import type { App } from "obsidian";
 import { displayTitle, roleLabel, statusLabel, t } from "../i18n";
-import type { AppLanguage, ChatNode, NodeId } from "../types";
+import type { AppLanguage, ChatNode, ChatNodeStatus, NodeId } from "../types";
 import { MarkdownContent } from "./MarkdownContent";
 
 interface NodeDetailsProps {
@@ -11,8 +11,10 @@ interface NodeDetailsProps {
   path: ChatNode[];
   draft: string;
   error: string | null;
+  errorDetails: string | null;
   focusToken: number;
   isPending: boolean;
+  canUseAi: boolean;
   language: AppLanguage;
   streamingContent: string;
   onCancel(this: void): void;
@@ -24,6 +26,7 @@ interface NodeDetailsProps {
   onRetry(this: void): void;
   onSend(this: void): void;
   onSummarize(this: void): void;
+  onStatusChange(this: void, status: ChatNodeStatus): void;
   onTitleChange(this: void, title: string): void;
 }
 
@@ -34,8 +37,10 @@ export function NodeDetails({
   path,
   draft,
   error,
+  errorDetails,
   focusToken,
   isPending,
+  canUseAi,
   language,
   streamingContent,
   onCancel,
@@ -47,6 +52,7 @@ export function NodeDetails({
   onRetry,
   onSend,
   onSummarize,
+  onStatusChange,
   onTitleChange,
 }: NodeDetailsProps): ReactElement {
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -133,7 +139,16 @@ export function NodeDetails({
               onChange={(e) => setTitleDraft(e.currentTarget.value)}
               onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
             />
-            <span className={`bcm-status bcm-status-${node.status}`}>{statusLabel(language, node.status)}</span>
+            <select
+              className={`bcm-status bcm-status-${node.status}`}
+              value={node.status}
+              onChange={(e) => onStatusChange(e.currentTarget.value as ChatNodeStatus)}
+              aria-label={language === "zh-CN" ? "节点状态" : "Node status"}
+            >
+              <option value="open">{t(language, "statusOpen")}</option>
+              <option value="understood">{t(language, "statusUnderstood")}</option>
+              <option value="archived">{t(language, "statusArchived")}</option>
+            </select>
           </div>
           <div className="bcm-node-facts">
             {t(language, "nodeStats", { messages: node.messages.length, children: node.children.length })}
@@ -198,6 +213,12 @@ export function NodeDetails({
       {error ? (
         <div className="bcm-error">
           <span>{error}</span>
+          {errorDetails ? (
+            <details>
+              <summary>{language === "zh-CN" ? "详情" : "Details"}</summary>
+              <pre>{errorDetails}</pre>
+            </details>
+          ) : null}
           <button type="button" onClick={onRetry}>{t(language, "retry")}</button>
         </div>
       ) : null}
@@ -221,8 +242,7 @@ export function NodeDetails({
             <button type="button" onClick={onCreateChild} title="Tab">{t(language, "newChild")}</button>
             <button type="button" onClick={onGoParent} disabled={!parent} title="Shift + Tab">{t(language, "parent")}</button>
             <button type="button" onClick={() => onDeleteNode(node.id)} disabled={!parent}>{t(language, "deleteNode")}</button>
-            <button type="button" onClick={onSummarize}>{t(language, "summarize")}</button>
-            <button type="button" onClick={onMarkUnderstood}>{t(language, "markUnderstood")}</button>
+            <button type="button" onClick={onSummarize} disabled={!canUseAi} title={!canUseAi ? t(language, "missingApiKey") : undefined}>{t(language, "summarize")}</button>
           </div>
           <div className="bcm-composer-actions">
             {isPending ? (

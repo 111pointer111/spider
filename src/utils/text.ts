@@ -15,8 +15,13 @@ export function escapeMermaid(value: string): string {
   return cleanText(value)
     .replaceAll("\\", "\\\\")
     .replaceAll('"', "'")
-    .replaceAll("(", "[")
-    .replaceAll(")", "]");
+    .replaceAll("#", "#35;")
+    .replaceAll("[", "#91;")
+    .replaceAll("]", "#93;")
+    .replaceAll("(", "#40;")
+    .replaceAll(")", "#41;")
+    .replaceAll("{", "#123;")
+    .replaceAll("}", "#125;");
 }
 
 export function slugifyFileName(value: string): string {

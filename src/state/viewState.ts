@@ -6,7 +6,7 @@ import { applyDagreLayout } from "../domain/layout";
 import { buildExportFiles } from "../export/exporters";
 import { t } from "../i18n";
 import { MapRepository } from "../storage/mapRepository";
-import type { ChatMap, ChatMapId, ChatMessage, ChatNode, NodeId } from "../types";
+import type { ChatMap, ChatMapId, ChatMessage, ChatNode, ChatNodeStatus, NodeId } from "../types";
 import { cleanText, slugifyFileName, truncateText } from "../utils/text";
 
 export interface BranchChatMapState {
@@ -17,7 +17,9 @@ export interface BranchChatMapState {
   pendingNodeId: NodeId | null;
   streamingContent: Record<NodeId, string>;
   error: string | null;
+  errorDetails: string | null;
   focusToken: number;
+  hasManualPositions: boolean;
 }
 
 const INITIAL_STATE: BranchChatMapState = {
@@ -28,8 +30,16 @@ const INITIAL_STATE: BranchChatMapState = {
   pendingNodeId: null,
   streamingContent: {},
   error: null,
+  errorDetails: null,
   focusToken: 0,
+  hasManualPositions: false,
 };
+
+export interface NodeSearchResult {
+  node: ChatNode;
+  path: ChatNode[];
+  excerpt: string;
+}
 
 export class ViewState {
   private readonly plugin: BranchChatMapPlugin;
@@ -53,7 +63,9 @@ export class ViewState {
         pendingNodeId: null,
         streamingContent: {},
         error: null,
+        errorDetails: null,
         focusToken: 0,
+        hasManualPositions: false,
       };
     }
   }
@@ -118,7 +130,9 @@ export class ViewState {
       drafts: selectedText
         ? {
             ...this.state.drafts,
-            [child.id]: language === "zh-CN" ? `请解释这段内容：${selectedText}` : `Please explain this: ${selectedText}`,
+            [child.id]: language === "zh-CN"
+              ? `请解释这段内容：${truncateText(selectedText, 120)}`
+              : `Please explain this: ${truncateText(selectedText, 120)}`,
           }
         : this.state.drafts,
     });
@@ -199,7 +213,7 @@ export class ViewState {
 
     const controller = new AbortController();
     this.abortController = controller;
-    this.setState({ error: null });
+    this.setState({ error: null, errorDetails: null });
 
     try {
       const provider = new OpenAICompatibleProvider(this.plugin.settings);
@@ -212,6 +226,32 @@ export class ViewState {
     }
   }
 
+  async deleteCurrentMap(): Promise<boolean> {
+    const { map } = this.state;
+    if (!map) {
+      return false;
+    }
+
+    const removed = await this.repository.deleteMap(map.id);
+    if (!removed) {
+      return false;
+    }
+
+    const remaining = await this.repository.listMaps();
+    if (remaining.length > 0) {
+      await this.loadLatest();
+    } else {
+      const language = this.plugin.settings.language;
+      const fresh = applyDagreLayout(
+        createRootMap(t(language, "defaultMapTitle"), t(language, "rootQuestionTitle")),
+      );
+      await this.repository.saveMap(fresh);
+      this.resetToMap(fresh);
+    }
+
+    return true;
+  }
+
   async exportMap(): Promise<void> {
     const { map } = this.state;
     if (!map) {
@@ -221,7 +261,7 @@ export class ViewState {
     try {
       const exportMap = await this.prepareMapForExport(map);
       const folder = `${this.plugin.settings.defaultExportFolder}/${this.exportFolderName(exportMap)}`;
-      const files = buildExportFiles(exportMap, { exportFolder: folder });
+      const files = buildExportFiles(exportMap, { exportFolder: folder, language: this.plugin.settings.language });
       let entryPath = "";
 
       for (const file of files) {
@@ -267,7 +307,7 @@ export class ViewState {
 
     const requestNode = map.nodes[activeNodeId];
     if (!requestNode || requestNode.messages.at(-1)?.role !== "user") {
-      this.setState({ error: t(this.plugin.settings.language, "retryUnavailable") });
+      this.setState({ error: t(this.plugin.settings.language, "retryUnavailable"), errorDetails: null });
       return;
     }
 
@@ -305,12 +345,16 @@ export class ViewState {
   }
 
   markUnderstood(): void {
+    this.updateCurrentNodeStatus("understood");
+  }
+
+  updateCurrentNodeStatus(status: ChatNodeStatus): void {
     const { map, activeNodeId } = this.state;
     if (!map || !activeNodeId) {
       return;
     }
 
-    this.commitMap(updateNode(map, activeNodeId, { status: "understood" }));
+    this.commitMap(updateNode(map, activeNodeId, { status }));
   }
 
   updatePosition(nodeId: NodeId, position: { x: number; y: number }): void {
@@ -320,6 +364,7 @@ export class ViewState {
     }
 
     this.commitMap(updateNode(map, nodeId, { position }));
+    this.setState({ hasManualPositions: true });
   }
 
   toggleCollapse(nodeId: NodeId): void {
@@ -337,7 +382,78 @@ export class ViewState {
     const { map } = this.state;
     if (map) {
       this.commitMap(applyDagreLayout(map));
+      this.setState({ hasManualPositions: false });
     }
+  }
+
+  countNodeSubtree(nodeId: NodeId): number {
+    const { map } = this.state;
+    if (!map || !map.nodes[nodeId]) {
+      return 0;
+    }
+
+    let count = 0;
+    const visit = (id: NodeId): void => {
+      const node = map.nodes[id];
+      if (!node) {
+        return;
+      }
+
+      count += 1;
+      for (const childId of node.children) {
+        visit(childId);
+      }
+    };
+
+    visit(nodeId);
+    return count;
+  }
+
+  searchNodes(query: string): NodeSearchResult[] {
+    const { map } = this.state;
+    const cleanQuery = cleanText(query).toLowerCase();
+    if (!map || !cleanQuery) {
+      return [];
+    }
+
+    return Object.values(map.nodes)
+      .map((node) => {
+        const haystack = [
+          node.title,
+          node.summary ?? "",
+          node.anchorText ?? "",
+          ...node.messages.map((message) => message.content),
+        ].join(" ");
+
+        if (!haystack.toLowerCase().includes(cleanQuery)) {
+          return null;
+        }
+
+        return {
+          node,
+          path: getAncestorPath(map, node.id),
+          excerpt: this.searchExcerpt(haystack, cleanQuery),
+        };
+      })
+      .filter((result): result is NodeSearchResult => Boolean(result));
+  }
+
+  revealNode(nodeId: NodeId): void {
+    const { map } = this.state;
+    if (!map?.nodes[nodeId]) {
+      return;
+    }
+
+    const collapsedIds = new Set(this.state.collapsedIds);
+    for (const node of getAncestorPath(map, nodeId)) {
+      collapsedIds.delete(node.id);
+    }
+
+    this.setState({
+      activeNodeId: nodeId,
+      collapsedIds,
+      focusToken: this.state.focusToken + 1,
+    });
   }
 
   getActiveNode(): ChatNode | null {
@@ -379,6 +495,7 @@ export class ViewState {
         map: initial,
         activeNodeId: initial.rootNodeId,
         error: null,
+        errorDetails: null,
       });
     } catch (loadError: unknown) {
       this.reportError(loadError);
@@ -404,7 +521,9 @@ export class ViewState {
         pendingNodeId: null,
         streamingContent: {},
         error: null,
+        errorDetails: null,
         focusToken: 0,
+        hasManualPositions: false,
       });
     } catch (loadError: unknown) {
       this.reportError(loadError);
@@ -421,7 +540,9 @@ export class ViewState {
       pendingNodeId: null,
       streamingContent: {},
       error: null,
+      errorDetails: null,
       focusToken: 0,
+      hasManualPositions: false,
     };
     this.emit();
   }
@@ -470,6 +591,7 @@ export class ViewState {
     this.setState({
       pendingNodeId: nodeId,
       error: null,
+      errorDetails: null,
       streamingContent: {
         ...this.state.streamingContent,
         [nodeId]: "",
@@ -547,6 +669,7 @@ export class ViewState {
         const partial = answer.trim();
         if (partial) {
           this.commitMap(appendMessage(baseMap, nodeId, createMessage("assistant", partial)));
+          new Notice(t(this.plugin.settings.language, "generationStoppedWithPartial"));
         }
       } else {
         this.reportError(generateError);
@@ -624,8 +747,23 @@ export class ViewState {
 
   private reportError(error: unknown): void {
     const message = error instanceof Error ? error.message : String(error);
-    this.setState({ error: message });
+    const details = error instanceof Error && "details" in error && typeof error.details === "string" ? error.details : null;
+    this.setState({ error: message, errorDetails: details });
     new Notice(message);
+  }
+
+  private searchExcerpt(value: string, query: string): string {
+    const clean = cleanText(value);
+    const idx = clean.toLowerCase().indexOf(query);
+    if (idx < 0) {
+      return truncateText(clean, 120);
+    }
+
+    const start = Math.max(0, idx - 36);
+    const end = Math.min(clean.length, idx + query.length + 72);
+    const prefix = start > 0 ? "..." : "";
+    const suffix = end < clean.length ? "..." : "";
+    return `${prefix}${clean.slice(start, end)}${suffix}`;
   }
 
   private setState(patch: Partial<BranchChatMapState>): void {

@@ -10,7 +10,9 @@ const INITIAL_STATE: BranchChatMapState = {
   pendingNodeId: null,
   streamingContent: {},
   error: null,
+  errorDetails: null,
   focusToken: 0,
+  hasManualPositions: false,
 };
 
 export function useBranchChatMapState(viewState: ViewState): BranchChatMapState {
@@ -52,5 +54,4 @@ export function useActiveViewState(plugin: BranchChatMapPlugin): BranchChatMapSt
 
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 }
-
 

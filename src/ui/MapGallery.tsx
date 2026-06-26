@@ -21,21 +21,33 @@ export function MapGallery({ plugin, onSelectMap, onNewMap }: MapGalleryProps): 
 
   const refresh = () => {
     void plugin.store.listAvailableMaps().then((maps) => {
-      setEntries(maps.map((map) => ({ map })));
+      setEntries(
+        [...maps]
+          .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
+          .map((map) => ({ map })),
+      );
     });
   };
 
   useEffect(refresh, [plugin.store]);
 
-  const handleDelete = async (e: React.MouseEvent, mapId: ChatMapId) => {
+  const handleDelete = async (e: React.MouseEvent, entry: MapEntry) => {
     e.stopPropagation();
-    const ok = await confirmDelete(plugin.app, mapId);
+    e.preventDefault();
+    const ok = await confirmDelete(plugin.app, entry.map.title);
     if (!ok) return;
 
-    const deleted = await plugin.store.repository.deleteMap(mapId);
-    if (deleted) {
-      new Notice(language === "zh-CN" ? "图谱已删除" : "Map deleted");
-      refresh();
+    try {
+      const deleted = await plugin.store.repository.deleteMap(entry.map.id);
+      if (deleted) {
+        new Notice(language === "zh-CN" ? "图谱已删除" : "Map deleted");
+        refresh();
+      } else {
+        new Notice(language === "zh-CN" ? "未找到该图谱文件" : "Map file not found");
+      }
+    } catch (deleteError: unknown) {
+      const message = deleteError instanceof Error ? deleteError.message : String(deleteError);
+      new Notice(language === "zh-CN" ? `删除失败：${message}` : `Delete failed: ${message}`);
     }
   };
 
@@ -65,6 +77,7 @@ export function MapGallery({ plugin, onSelectMap, onNewMap }: MapGalleryProps): 
               const root = entry.map.nodes[entry.map.rootNodeId];
               const firstMsg = root?.messages[0];
               const nodeCount = Object.keys(entry.map.nodes).length;
+              const summary = root?.summary || firstMsg?.content;
               return (
                 <div
                   key={entry.map.id}
@@ -87,9 +100,9 @@ export function MapGallery({ plugin, onSelectMap, onNewMap }: MapGalleryProps): 
                         {root.title}
                       </div>
                     ) : null}
-                    {firstMsg ? (
+                    {summary ? (
                       <div className="bcm-gallery-card-message">
-                        {firstMsg.content}
+                        {summary}
                       </div>
                     ) : (
                       <div className="bcm-gallery-card-empty">
@@ -98,13 +111,16 @@ export function MapGallery({ plugin, onSelectMap, onNewMap }: MapGalleryProps): 
                     )}
                     <div className="bcm-gallery-card-footer">
                       <span className="bcm-gallery-card-meta">
-                        {nodeCount}
-                        {language === "zh-CN" ? " 节点" : " nodes"}
+                        {t(language, "nodesCount", { count: nodeCount })}
+                      </span>
+                      <span className="bcm-gallery-card-meta">
+                        {t(language, "updatedAt", { time: new Date(entry.map.updatedAt).toLocaleString(language) })}
                       </span>
                       <button
                         className="bcm-gallery-card-delete"
                         type="button"
-                        onClick={(e) => { void handleDelete(e, entry.map.id); }}
+                        onClick={(e) => { void handleDelete(e, entry); }}
+                        onMouseDown={(e) => e.stopPropagation()}
                         aria-label={language === "zh-CN" ? "删除" : "Delete"}
                       >
                         &times;

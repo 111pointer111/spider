@@ -1,12 +1,14 @@
 import "@xyflow/react/dist/style.css";
 
-import { useCallback, useEffect, useRef, type ReactElement } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactElement } from "react";
+import { Notice } from "obsidian";
 import type BranchChatMapPlugin from "../main";
 import { displayTitle, t } from "../i18n";
 import { GraphCanvas } from "./GraphCanvas";
 import { useBranchChatMapState } from "./useBranchChatMapState";
 import { MapSwitcherModal } from "./MapSwitcherModal";
 import { MapGallery } from "./MapGallery";
+import { confirmAction, confirmDelete } from "./ConfirmModal";
 import type { ViewState } from "../state/viewState";
 import type { ChatMapId } from "../types";
 
@@ -16,6 +18,7 @@ export interface BranchChatMapController {
   goToParent(this: void): void;
   summarizeCurrentNode(this: void): Promise<void>;
   exportMap(this: void): Promise<void>;
+  deleteCurrentMap(this: void): Promise<void>;
 }
 
 interface BranchChatMapAppProps {
@@ -65,7 +68,9 @@ function openMapSwitcher(plugin: BranchChatMapPlugin): void {
 export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle, onNewSpider, onLoadMap }: BranchChatMapAppProps): ReactElement {
   const rootRef = useRef<HTMLDivElement>(null);
   const state = useBranchChatMapState(viewState);
-  const { map, activeNodeId, collapsedIds } = state;
+  const { map, activeNodeId, collapsedIds, hasManualPositions } = state;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
   const activeNode = activeNodeId && map ? map.nodes[activeNodeId] : null;
   const language = plugin.settings.language;
   const path = viewState.getActivePath();
@@ -83,6 +88,57 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
   const handleSelectMap = useCallback((mapId: ChatMapId) => {
     onLoadMap(mapId);
   }, [onLoadMap]);
+
+  const handleDeleteCurrentMap = useCallback(async () => {
+    const target = viewState.getSnapshot().map;
+    if (!target) {
+      return;
+    }
+    const ok = await confirmDelete(plugin.app, target.title);
+    if (!ok) {
+      return;
+    }
+    const removed = await viewState.deleteCurrentMap();
+    if (removed) {
+      new Notice(language === "zh-CN" ? "图谱已删除" : "Map deleted");
+    }
+  }, [language, plugin.app, viewState]);
+
+  const handleAutoLayout = useCallback(async () => {
+    if (hasManualPositions) {
+      const ok = await confirmAction(plugin.app, {
+        title: t(language, "autoLayout"),
+        message: t(language, "confirmAutoLayout"),
+        confirmText: t(language, "autoLayout"),
+        cancelText: language === "zh-CN" ? "取消" : "Cancel",
+      });
+      if (!ok) {
+        return;
+      }
+    }
+
+    viewState.autoLayout();
+  }, [hasManualPositions, language, plugin.app, viewState]);
+
+  const confirmAndDeleteNode = useCallback(async (nodeId: ChatMapId) => {
+    const subtreeCount = viewState.countNodeSubtree(nodeId);
+    const childCount = Math.max(0, subtreeCount - 1);
+    const message = childCount > 0
+      ? t(language, "confirmDeleteSubtree", { count: childCount })
+      : t(language, "confirmDeleteNode");
+    const ok = await confirmAction(plugin.app, {
+      title: t(language, "deleteNode"),
+      message,
+      confirmText: t(language, "deleteNode"),
+      cancelText: language === "zh-CN" ? "取消" : "Cancel",
+    });
+    if (ok) {
+      viewState.deleteNode(nodeId);
+    }
+  }, [language, plugin.app, viewState]);
+
+  const searchResults = useMemo(() => viewState.searchNodes(searchQuery), [searchQuery, state.map, viewState]);
+  const searchMatchIds = useMemo(() => new Set(searchResults.map((result) => result.node.id)), [searchResults]);
 
   const createChild = useCallback(
     (anchorText?: string) => {
@@ -118,7 +174,7 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
         const { map, activeNodeId } = viewState.getSnapshot();
         if (map && activeNodeId && activeNodeId !== map.rootNodeId) {
           event.preventDefault();
-          viewState.deleteNode(activeNodeId);
+          void confirmAndDeleteNode(activeNodeId);
           return;
         }
       }
@@ -185,7 +241,7 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
         }
       }
     },
-    [createChild, plugin.settings.useTabToCreateChildNodes, viewState],
+    [confirmAndDeleteNode, createChild, plugin.settings.useTabToCreateChildNodes, viewState],
   );
 
   useEffect(() => {
@@ -195,8 +251,9 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
       goToParent: () => viewState.goToParent(),
       summarizeCurrentNode: () => viewState.summarizeCurrentNode(),
       exportMap: () => viewState.exportMap(),
+      deleteCurrentMap: handleDeleteCurrentMap,
     });
-  }, [createChild, handleKeydown, onController, viewState]);
+  }, [createChild, handleDeleteCurrentMap, handleKeydown, onController, viewState]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -249,7 +306,14 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
         <div>
           <div className="bcm-eyebrow">{t(language, "appName")}</div>
           <div className="bcm-title-row">
-            <span className="bcm-title-link" onClick={handleSwitchClick} role="button" tabIndex={0}>
+            <span
+              className="bcm-title-link"
+              onClick={handleSwitchClick}
+              role="button"
+              tabIndex={0}
+              title={t(language, "switchMapHint")}
+              aria-label={t(language, "switchMapHint")}
+            >
               {displayTitle(language, map.title)}
               <span className="bcm-title-arrow">▾</span>
             </span>
@@ -258,21 +322,60 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
           <div className="bcm-topbar-meta">{t(language, "mapStats", { nodes: nodeCount, depth: Math.max(path.length - 1, 0) })}</div>
         </div>
         <div className="bcm-topbar-actions">
-          <button className="bcm-topbar-btn" onClick={() => viewState.autoLayout()} type="button" title={t(language, "autoLayout")}>
+          <button className="bcm-topbar-btn" onClick={() => { void handleAutoLayout(); }} type="button" title={t(language, "autoLayout")}>
             {language === "zh-CN" ? "布局" : "Layout"}
           </button>
           <button className="bcm-topbar-btn" onClick={() => { void viewState.exportMap(); }} type="button" title={t(language, "export")}>
             {language === "zh-CN" ? "导出" : "Export"}
           </button>
+          <div className="bcm-more">
+            <button className="bcm-topbar-btn" onClick={() => setMoreOpen((open) => !open)} type="button" title={t(language, "moreActions")} aria-expanded={moreOpen}>
+              {t(language, "moreActions")} ▾
+            </button>
+            {moreOpen ? (
+              <div className="bcm-more-menu">
+                <button className="bcm-more-item is-danger" onClick={() => { setMoreOpen(false); void handleDeleteCurrentMap(); }} type="button">
+                  {t(language, "deleteMap")}
+                </button>
+              </div>
+            ) : null}
+          </div>
         </div>
       </div>
 
       <div className="bcm-workspace">
+        <div className="bcm-search-panel">
+          <input
+            className="bcm-search-input"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.currentTarget.value)}
+            placeholder={t(language, "searchPlaceholder")}
+            aria-label={t(language, "searchNodes")}
+          />
+          {searchQuery ? (
+            <div className="bcm-search-results">
+              {searchResults.length > 0 ? searchResults.slice(0, 8).map((result) => (
+                <button
+                  className="bcm-search-result"
+                  key={result.node.id}
+                  type="button"
+                  onClick={() => viewState.revealNode(result.node.id)}
+                >
+                  <span>{displayTitle(language, result.node.title)}</span>
+                  <small>{result.excerpt}</small>
+                </button>
+              )) : (
+                <div className="bcm-search-empty">{t(language, "searchNoResults")}</div>
+              )}
+            </div>
+          ) : null}
+        </div>
         <GraphCanvas
           map={map}
           activeNodeId={activeNode.id}
           collapsedIds={collapsedIds}
           language={language}
+          searchMatchIds={searchMatchIds}
           onActivateNode={(nodeId) => viewState.setActiveNode(nodeId)}
           onToggleCollapse={(nodeId) => viewState.toggleCollapse(nodeId)}
           onPositionChange={(nodeId, position) => viewState.updatePosition(nodeId, position)}
