@@ -35,7 +35,7 @@
   height: 100%;
   min-height: 0;
   display: grid;
-  grid-template-rows: 58px 1fr;
+  grid-template-rows: minmax(58px, auto) minmax(0, 1fr);
   overflow: hidden;
   font-family: var(--font-interface);
   color: var(--bcm-text);
@@ -424,6 +424,8 @@
 
 .bcm-search-input {
   box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
   width: 100%;
   border: 1px solid var(--bcm-border-subtle);
   border-radius: 9px;

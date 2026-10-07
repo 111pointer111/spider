@@ -16,6 +16,7 @@ import { MapSwitcherModal } from "./ui/MapSwitcherModal";
 import { createRootMap } from "./domain/chatMap";
 import { applyDagreLayout } from "./domain/layout";
 import { updateLocalizedChrome, type LocalizedCommand } from "./localizedChrome";
+import { openPluginSettings } from "./ui/openPluginSettings";
 
 export default class BranchChatMapPlugin extends Plugin {
   settings: BranchChatMapSettings = DEFAULT_SETTINGS;
@@ -49,6 +50,11 @@ export default class BranchChatMapPlugin extends Plugin {
       callback: () => {
         void this.activateView();
       },
+    });
+
+    this.addLocalizedCommand("openSettings", {
+      id: "open-settings",
+      callback: () => { openPluginSettings(this.app, this.manifest.id); },
     });
 
     this.addLocalizedCommand("createChildCommand", {
@@ -116,9 +122,12 @@ export default class BranchChatMapPlugin extends Plugin {
     this.updateLocalizedChrome();
 
     this.app.workspace.onLayoutReady(() => {
+      const activeView = this.app.workspace.getActiveViewOfType(BranchChatMapView);
       this.detachLegacyViews();
       void this.ensureMainTabView(false).then((leaf) => {
         if (leaf) {
+          const view = activeView ?? (leaf.view instanceof BranchChatMapView ? leaf.view : null);
+          view?.activateSession();
           void this.ensureChatSidebarView(true);
         }
       });
@@ -173,6 +182,7 @@ export default class BranchChatMapPlugin extends Plugin {
     await leaf.setViewState({
       type: VIEW_TYPE_BRANCH_CHAT_MAP,
       active: true,
+      state: { mapId: map.id, activeNodeId: map.rootNodeId },
     });
     await this.app.workspace.revealLeaf(leaf);
 
@@ -185,7 +195,10 @@ export default class BranchChatMapPlugin extends Plugin {
       return null;
     }
 
-    const mainLeaf = existingLeaves.find((leaf) => this.isMainWorkspaceLeaf(leaf));
+    const activeView = this.app.workspace.getActiveViewOfType(BranchChatMapView);
+    const mainLeaf = activeView && this.isMainWorkspaceLeaf(activeView.leaf)
+      ? activeView.leaf
+      : existingLeaves.find((leaf) => this.isMainWorkspaceLeaf(leaf));
     if (mainLeaf) {
       return mainLeaf;
     }

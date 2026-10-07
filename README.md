@@ -101,7 +101,7 @@ Spider follows Obsidian's language on first install. You can switch between Chin
 
 - Settings → Learning style: choose Step by step, Socratic, Concise, or a custom system prompt. Changes apply to your next question.
 - Select AI answer text and press `Enter` to save a quote to its node. Existing notes are preserved.
-- Expand Personal notes above the composer to edit your insights. Changes are saved automatically.
+- A two-line Personal notes preview stays above the composer. Expand it to read rendered Markdown, then choose Edit to add your insights. Changes are saved automatically.
 - Export packages include `notes.md`, preserving node titles, full paths, depth, and links to original node files.
 - No client-side usage analytics are collected.
 

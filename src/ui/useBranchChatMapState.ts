@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useSyncExternalStore, useState } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import type BranchChatMapPlugin from "../main";
 import type { ViewState, BranchChatMapState } from "../state/viewState";
 import type { BranchChatMapSettings } from "../types";
@@ -33,13 +33,11 @@ export function useActiveViewState(plugin: BranchChatMapPlugin): BranchChatMapSt
     return store.getActiveSession() ?? null;
   }, [store]);
 
-  const [viewState, setViewState] = useState<ViewState | null>(getActiveViewState);
-
-  useEffect(() => {
-    return store.subscribeActiveView(() => {
-      setViewState(store.getActiveSession());
-    });
+  const subscribeActiveView = useCallback((listener: () => void) => {
+    return store.subscribeActiveView(listener);
   }, [store]);
+  // Re-check after subscribing so startup cannot miss the first active-session change.
+  const viewState = useSyncExternalStore(subscribeActiveView, getActiveViewState, getActiveViewState);
 
   const subscribe = useCallback(
     (cb: () => void) => {

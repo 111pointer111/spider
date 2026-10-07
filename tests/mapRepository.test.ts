@@ -1,6 +1,6 @@
 import { expect, it, vi } from "vitest";
 import type { App } from "obsidian";
-import { createRootMap } from "../src/domain/chatMap";
+import { createRootMap, updateNode, updateMapTitle } from "../src/domain/chatMap";
 import type BranchChatMapPlugin from "../src/main";
 import { createDefaultSettings } from "../src/settingsDefaults";
 import { ViewState } from "../src/state/viewState";
@@ -10,6 +10,62 @@ vi.mock("obsidian", async (importOriginal) => ({
   ...await importOriginal<Record<string, unknown>>(),
   normalizePath: (value: string) => value.replaceAll("\\", "/").replace(/\/{2,}/g, "/"),
 }));
+
+function memoryVault(files: Map<string, string>) {
+  const folders = new Set([".spider", ".spider/maps"]);
+  const write = vi.fn(async (path: string, content: string) => { files.set(path, content); });
+  const app = { vault: {
+    adapter: {
+      exists: async (path: string) => files.has(path) || folders.has(path),
+      list: async (dir: string) => ({ files: [...files.keys()].filter((path) => path.startsWith(dir + "/")), folders: [] }),
+      read: async (path: string) => files.get(path)!,
+      write,
+      remove: async (path: string) => { files.delete(path); },
+    },
+    createFolder: async (path: string) => { folders.add(path); },
+  } } as unknown as App;
+  return { app, write };
+}
+
+it("recovers the newest legacy revision, keeps renamed maps at a stable path, and deletes all revisions", async () => {
+  const root = createRootMap("Before", "Root");
+  const old = { ...root, updatedAt: "2026-10-01T00:00:00.000Z" };
+  const current = { ...updateNode(root, root.rootNodeId, { note: "Saved quote" }), updatedAt: "2026-10-02T00:00:00.000Z" };
+  const files = new Map([
+    [`.spider/maps/Before-${root.id}.json`, JSON.stringify(old)],
+    [`.spider/maps/After-${root.id}.json`, JSON.stringify(current)],
+  ]);
+  const { app } = memoryVault(files);
+  const repo = new MapRepository(app);
+  expect((await repo.loadMap(root.id))?.nodes[root.rootNodeId]?.note).toBe("Saved quote");
+  expect(await repo.listMaps()).toHaveLength(1);
+  await repo.saveMap(updateMapTitle(current, "Renamed again"));
+  expect(files.has(`.spider/maps/${root.id}.json`)).toBe(true);
+  expect((await repo.loadMap(root.id))?.title).toBe("Renamed again");
+  expect(files.size).toBe(3); // Legacy files remain intact until the user deletes the map.
+  expect(await repo.deleteMap(root.id)).toBe(true);
+  expect(files.size).toBe(0);
+});
+
+it("orders competing note writes and waits for them before reopening the map", async () => {
+  const files = new Map<string, string>();
+  const { app, write } = memoryVault(files);
+  const repo = new MapRepository(app);
+  const root = createRootMap("Write ordering", "Root");
+  let finish!: () => void;
+  let started!: () => void;
+  const ready = new Promise<void>((resolve) => { started = resolve; });
+  const paused = new Promise<void>((resolve) => { finish = resolve; });
+  write.mockImplementationOnce(async (path, content) => { started(); await paused; files.set(path, content); });
+  const first = repo.saveMap(root);
+  await ready;
+  const second = repo.saveMap(updateNode(root, root.rootNodeId, { note: "Latest note" }));
+  const reopened = repo.loadMap(root.id);
+  expect(write).toHaveBeenCalledTimes(1);
+  finish();
+  await Promise.all([first, second]);
+  expect((await reopened)?.nodes[root.rootNodeId]?.note).toBe("Latest note");
+});
 
 it("exports numbered snapshots without touching previous notes and links each Canvas to its own snapshot", async () => {
   const files = new Map<string, string>();

@@ -16,7 +16,9 @@ export const Plugin = class Plugin {};
 
 export const WorkspaceLeaf = class WorkspaceLeaf {};
 
-export const ItemView = class ItemView {};
+export const ItemView = class ItemView {
+  async setState() {}
+};
 
 export const FuzzySuggestModal = class FuzzySuggestModal {
   constructor() {}

@@ -6,67 +6,23 @@ import { slugifyFileName } from "../utils/text";
 
 export class MapRepository {
   private readonly app: App;
+  private readonly mapWrites = new Map<string, Promise<void>>();
 
   constructor(app: App) {
     this.app = app;
   }
 
   async loadLatestMap(): Promise<ChatMap | null> {
-    await this.ensureDataDir();
-    return (await this.loadLatestMapFromDir(DATA_DIR)) ?? (await this.loadLatestMapFromDir(LEGACY_DATA_DIR));
-  }
-
-  private async loadLatestMapFromDir(dir: string): Promise<ChatMap | null> {
-    if (!(await this.app.vault.adapter.exists(dir))) {
-      return null;
-    }
-
-    const listed = await this.app.vault.adapter.list(dir);
-    const files = listed.files.filter((path) => path.endsWith(".json")).sort((left, right) => right.localeCompare(left));
-
-    for (const path of files) {
-      try {
-        const raw = await this.app.vault.adapter.read(path);
-        const parsed = JSON.parse(raw) as unknown;
-        if (isChatMap(parsed)) {
-          return parsed;
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    return null;
+    return (await this.listMaps())[0] ?? null;
   }
 
   async loadMap(mapId: string): Promise<ChatMap | null> {
-    const fromDir = async (dir: string): Promise<ChatMap | null> => {
-      if (!(await this.app.vault.adapter.exists(dir))) {
-        return null;
-      }
-
-      const listed = await this.app.vault.adapter.list(dir);
-      for (const path of listed.files) {
-        if (!path.endsWith(".json")) continue;
-        try {
-          const raw = await this.app.vault.adapter.read(path);
-          const parsed = JSON.parse(raw) as unknown;
-          if (isChatMap(parsed) && parsed.id === mapId) {
-            return parsed;
-          }
-        } catch {
-          continue;
-        }
-      }
-
-      return null;
-    };
-
-    return (await fromDir(DATA_DIR)) ?? (await fromDir(LEGACY_DATA_DIR));
+    await this.mapWrites.get(mapId);
+    return (await this.listMaps()).find((map) => map.id === mapId) ?? null;
   }
 
   async listMaps(): Promise<ChatMap[]> {
-    const maps: ChatMap[] = [];
+    const maps = new Map<string, ChatMap>();
 
     const fromDir = async (dir: string): Promise<void> => {
       if (!(await this.app.vault.adapter.exists(dir))) {
@@ -81,7 +37,12 @@ export class MapRepository {
           const raw = await this.app.vault.adapter.read(path);
           const parsed = JSON.parse(raw) as unknown;
           if (isChatMap(parsed)) {
-            maps.push(parsed);
+            const previous = maps.get(parsed.id);
+            // Old title-based filenames may contain several revisions of the same map.
+            if (!previous || parsed.updatedAt > previous.updatedAt
+              || (parsed.updatedAt === previous.updatedAt && path === this.mapPath(parsed))) {
+              maps.set(parsed.id, parsed);
+            }
           }
         } catch {
           continue;
@@ -92,45 +53,42 @@ export class MapRepository {
     await fromDir(DATA_DIR);
     await fromDir(LEGACY_DATA_DIR);
 
-    return maps;
+    return [...maps.values()].sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
   }
 
   async deleteMap(mapId: string): Promise<boolean> {
-    const fromDir = async (dir: string): Promise<string | null> => {
-      if (!(await this.app.vault.adapter.exists(dir))) {
-        return null;
-      }
-
+    await this.mapWrites.get(mapId);
+    const paths: string[] = [];
+    for (const dir of [DATA_DIR, LEGACY_DATA_DIR]) {
+      if (!(await this.app.vault.adapter.exists(dir))) continue;
       const listed = await this.app.vault.adapter.list(dir);
-      for (const path of listed.files) {
-        if (!path.endsWith(".json")) continue;
+      for (const path of listed.files.filter((file) => file.endsWith(".json"))) {
         try {
-          const raw = await this.app.vault.adapter.read(path);
-          const parsed = JSON.parse(raw) as unknown;
-          if (isChatMap(parsed) && parsed.id === mapId) {
-            return path;
-          }
+          const parsed: unknown = JSON.parse(await this.app.vault.adapter.read(path));
+          if (isChatMap(parsed) && parsed.id === mapId) paths.push(path);
         } catch {
           continue;
         }
       }
-
-      return null;
-    };
-
-    const path = (await fromDir(DATA_DIR)) ?? (await fromDir(LEGACY_DATA_DIR));
-    if (!path) {
-      return false;
     }
-
-    await this.app.vault.adapter.remove(path);
-    return true;
+    for (const path of paths) await this.app.vault.adapter.remove(path);
+    return paths.length > 0;
   }
 
   async saveMap(map: ChatMap): Promise<void> {
-    await this.ensureDataDir();
-    const path = this.mapPath(map);
-    await this.app.vault.adapter.write(path, `${JSON.stringify(map, null, 2)}\n`);
+    // Serialize writes per map so a slower old revision cannot replace a newer note.
+    const write = (this.mapWrites.get(map.id) ?? Promise.resolve())
+      .catch(() => undefined)
+      .then(async () => {
+        await this.ensureDataDir();
+        await this.app.vault.adapter.write(this.mapPath(map), `${JSON.stringify(map, null, 2)}\n`);
+      });
+    this.mapWrites.set(map.id, write);
+    try {
+      await write;
+    } finally {
+      if (this.mapWrites.get(map.id) === write) this.mapWrites.delete(map.id);
+    }
   }
 
   async writeExport(folder: string, fileName: string, content: string): Promise<string> {
@@ -157,7 +115,7 @@ export class MapRepository {
   }
 
   private mapPath(map: ChatMap): string {
-    return normalizePath(`${DATA_DIR}/${slugifyFileName(map.title)}-${map.id}.json`);
+    return normalizePath(`${DATA_DIR}/${slugifyFileName(map.id)}.json`);
   }
 
   private async ensureDataDir(): Promise<void> {

@@ -49,6 +49,7 @@ export class ViewState {
   private readonly listeners = new Set<() => void>();
   private state: BranchChatMapState = INITIAL_STATE;
   private loadPromise: Promise<void> | null = null;
+  private loadRevision = 0;
   private abortController: AbortController | null = null;
   private loadedMapId: ChatMapId | null = null;
 
@@ -90,11 +91,13 @@ export class ViewState {
       return this.loadPromise;
     }
 
-    this.loadPromise = mapId ? this.loadById(mapId) : this.loadLatest();
+    const revision = ++this.loadRevision;
+    this.loadPromise = mapId ? this.loadById(mapId, revision) : this.loadLatest(revision);
     return this.loadPromise;
   }
 
   async createNewRootMap(): Promise<ChatMap> {
+    this.loadRevision += 1;
     const language = this.plugin.settings.language;
     const map = applyDagreLayout(createRootMap(t(language, "defaultMapTitle"), t(language, "rootQuestionTitle")));
     await this.repository.saveMap(map);
@@ -513,11 +516,12 @@ export class ViewState {
   }
 
   dispose(): void {
+    this.loadRevision += 1;
     this.abortController?.abort();
     this.listeners.clear();
   }
 
-  private async loadLatest(): Promise<void> {
+  private async loadLatest(revision = ++this.loadRevision): Promise<void> {
     try {
       const lastId = this.plugin.settings.lastOpenedMapId;
       let loaded: ChatMap | null = null;
@@ -529,12 +533,14 @@ export class ViewState {
       if (!loaded) {
         loaded = await this.repository.loadLatestMap();
       }
+      if (revision !== this.loadRevision) return;
 
       const language = this.plugin.settings.language;
       const initial = loaded ?? applyDagreLayout(createRootMap(t(language, "defaultMapTitle"), t(language, "rootQuestionTitle")));
       if (!loaded) {
         await this.repository.saveMap(initial);
       }
+      if (revision !== this.loadRevision) return;
 
       this.loadedMapId = initial.id;
       this.setState({
@@ -544,14 +550,14 @@ export class ViewState {
         errorDetails: null,
       });
     } catch (loadError: unknown) {
-      this.reportError(loadError);
+      if (revision === this.loadRevision) this.reportError(loadError);
     }
   }
 
-  private async loadById(mapId: ChatMapId): Promise<void> {
+  private async loadById(mapId: ChatMapId, revision: number): Promise<void> {
     try {
       const loaded = await this.repository.loadMap(mapId);
-      if (!loaded) {
+      if (!loaded || revision !== this.loadRevision) {
         return;
       }
 
@@ -571,7 +577,7 @@ export class ViewState {
         hasManualPositions: false,
       });
     } catch (loadError: unknown) {
-      this.reportError(loadError);
+      if (revision === this.loadRevision) this.reportError(loadError);
     }
   }
 

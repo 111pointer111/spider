@@ -243,7 +243,7 @@ export function NodeDetails({
       </div>
 
       <div className="bcm-detail-footer">
-        <NodeNotes key={`${mapId}/${node.id}`} note={node.note} language={language} onChange={onNoteChange} />
+        <NodeNotes key={`${mapId}/${node.id}`} app={app} sourcePath={sourcePath} note={node.note} language={language} onChange={onNoteChange} />
         {error ? (
           <div className="bcm-error">
             <span>{error}</span>

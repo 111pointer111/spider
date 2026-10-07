@@ -21,6 +21,7 @@ export function setupLearningChecks(plugin, checks) {
       checks.selectSecondOccurrence();
       assert((await key()).defaultPrevented, "Enter handles a body-focused AI selection");
       assert(vs.getActiveNode().note === "Existing insight\n\n> SelfAttention", "Enter appends to existing node notes");
+      assert(view.contentEl.querySelector(".bcm-inline-notes-snippet").textContent.includes("SelfAttention"), "saved quotes are visible without opening the notes panel");
       assert(vs.getActiveNode().messages.length === count && vs.getActiveNode().id === rootId, "saving a quote neither sends a question nor changes nodes");
       assert(document.getSelection().isCollapsed, "saved selection clears to prevent accidental duplicate Enter");
       await checks.switchNode(siblingId);
@@ -45,6 +46,10 @@ export function setupLearningChecks(plugin, checks) {
       document.getSelection().removeAllRanges();
       const summary = view.contentEl.querySelector(".bcm-inline-notes summary");
       summary.click();
+      await delay(80);
+      assert(view.contentEl.querySelector(".bcm-inline-notes-preview").textContent.includes("SelfAttention"), "expanded notes render a readable Markdown preview");
+      view.contentEl.querySelector(".bcm-inline-notes-tools button").click();
+      await delay(30);
       const editor = view.contentEl.querySelector("[data-spider-note-editor]");
       editor.focus();
       // React uses the native setter rather than an assignment that updates its value tracker.

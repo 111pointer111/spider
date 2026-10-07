@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, type ViewStateResult } from "obsidian";
 import type { ReactElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { VIEW_TYPE_BRANCH_CHAT_MAP, VIEW_TYPE_BRANCH_CHAT_MAP_CHAT } from "./constants";
@@ -7,7 +7,7 @@ import type BranchChatMapPlugin from "./main";
 import { BranchChatMapApp, type BranchChatMapController } from "./ui/BranchChatMapApp";
 import { BranchChatMapChatApp } from "./ui/BranchChatMapChatApp";
 import type { ViewState } from "./state/viewState";
-import type { ChatMapId } from "./types";
+import type { ChatMapId, NodeId } from "./types";
 import { shouldHandleViewKeydown } from "./ui/keyboardShortcuts";
 
 abstract class BranchChatMapBaseView extends ItemView {
@@ -116,6 +116,30 @@ function generateLeafId(): string {
 export class BranchChatMapView extends BranchChatMapBaseView {
   private leafId: string;
   private viewState: ViewState | null = null;
+  private restoredState: { mapId?: ChatMapId; activeNodeId?: NodeId } = {};
+
+  getState(): Record<string, unknown> {
+    const snapshot = this.viewState?.getSnapshot();
+    return {
+      mapId: snapshot?.map?.id ?? this.restoredState.mapId,
+      activeNodeId: snapshot?.activeNodeId ?? this.restoredState.activeNodeId,
+    };
+  }
+
+  async setState(state: unknown, result: ViewStateResult): Promise<void> {
+    if (typeof state === "object" && state !== null) {
+      this.restoredState = {
+        mapId: "mapId" in state && typeof state.mapId === "string" ? state.mapId : undefined,
+        activeNodeId: "activeNodeId" in state && typeof state.activeNodeId === "string" ? state.activeNodeId : undefined,
+      };
+      const { mapId, activeNodeId } = this.restoredState;
+      if (mapId && this.viewState) {
+        if (this.viewState.getLoadedMapId() !== mapId) await this.viewState.load(mapId);
+        if (activeNodeId) this.viewState.setActiveNode(activeNodeId);
+      }
+    }
+    await super.setState(state, result);
+  }
 
   constructor(leaf: WorkspaceLeaf, plugin: BranchChatMapPlugin) {
     super(leaf, plugin);
@@ -124,6 +148,10 @@ export class BranchChatMapView extends BranchChatMapBaseView {
 
   getViewType(): string {
     return VIEW_TYPE_BRANCH_CHAT_MAP;
+  }
+
+  activateSession(): void {
+    this.plugin.store.setActiveSession(this.leafId);
   }
 
   protected getContentClassName(): string {
@@ -139,8 +167,7 @@ export class BranchChatMapView extends BranchChatMapBaseView {
       this.viewState = this.plugin.store.registerSession(this.leafId);
     }
 
-    const vs = this.leaf.getViewState();
-    const mapId = (vs.state as { mapId?: ChatMapId } | undefined)?.mapId;
+    const mapId = this.restoredState.mapId;
 
     if (mapId && !this.viewState.getSnapshot().map) {
       void this.viewState.load(mapId);
@@ -149,6 +176,18 @@ export class BranchChatMapView extends BranchChatMapBaseView {
     }
 
     await super.onOpen();
+    this.registerDomEvent(this.contentEl, "pointerdown", () => this.activateSession());
+
+    let savedState = "";
+    this.register(this.viewState.subscribe(() => {
+      const current = this.getState();
+      const key = `${current.mapId ?? ""}:${current.activeNodeId ?? ""}`;
+      if (key !== savedState) {
+        savedState = key;
+        this.app.workspace.requestSaveLayout();
+      }
+    }));
+    this.app.workspace.requestSaveLayout();
 
     this.registerEvent(
       this.app.workspace.on("active-leaf-change", (leaf) => {

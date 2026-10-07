@@ -1,6 +1,7 @@
 import type { AppLanguage, ChatNodeStatus, ChatRole } from "./types";
 
 export type TranslationKey =
+  | "previewNote"
   | "selectionSaved"
   | "saveSelection"
   | "notesHint"
@@ -169,6 +170,7 @@ export type TranslationKey =
 type TranslationDictionary = Record<TranslationKey, string>;
 
 const zh: TranslationDictionary = {
+  previewNote: "预览",
   selectionSaved: "已加入当前节点随记",
   saveSelection: "加入随记",
   notesHint: "选中 AI 回答，按 Enter 摘录；也可以在这里写下自己的理解。",
@@ -217,11 +219,11 @@ const zh: TranslationDictionary = {
   currentNodeLabel: "当前节点",
   selectedSourceHint: "来自上一节点选中的原文",
   branchSource: "追问来源",
-  nodeSummaryLabel: "结论",
+  nodeSummaryLabel: "AI 摘要",
   nodeNote: "个人随记",
-  addNodeNote: "添加节点笔记",
-  editNodeNote: "编辑节点笔记",
-  nodeNotePlaceholder: "记录你的判断、结论或待办，支持 Markdown。",
+  addNodeNote: "添加随记",
+  editNodeNote: "编辑随记",
+  nodeNotePlaceholder: "写下自己的理解、疑问或结论，支持 Markdown。",
   nodeNoteEmpty: "点击记录你对这个节点的判断或结论。",
   noteSaving: "保存中…",
   noteSaved: "已自动保存",
@@ -335,6 +337,7 @@ const zh: TranslationDictionary = {
 };
 
 const en: TranslationDictionary = {
+  previewNote: "Preview",
   selectionSaved: "Saved to this node’s notes",
   saveSelection: "Save to notes",
   notesHint: "Select an AI answer and press Enter to save a quote, or write your own insights here.",
@@ -383,7 +386,7 @@ const en: TranslationDictionary = {
   currentNodeLabel: "Current node",
   selectedSourceHint: "Selected from the parent branch",
   branchSource: "Source text",
-  nodeSummaryLabel: "Summary",
+  nodeSummaryLabel: "AI summary",
   nodeNote: "Personal notes",
   addNodeNote: "Add node note",
   editNodeNote: "Edit node note",

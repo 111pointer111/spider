@@ -40,6 +40,24 @@ function createViewState(initialMap: ChatMap, settingsOverride: Partial<BranchCh
 }
 
 describe("ViewState", () => {
+  it("does not let a slow default load replace an explicitly restored tab", async () => {
+    const oldMap = createRootMap("Default map");
+    const restoredMap = createRootMap("Restored tab");
+    let finish!: (map: ChatMap) => void;
+    const slow = new Promise<ChatMap>((resolve) => { finish = resolve; });
+    const plugin = { settings, updateSettings: async () => {} } as unknown as BranchChatMapPlugin;
+    const repo = {
+      loadLatestMap: () => slow,
+      loadMap: async () => restoredMap,
+    };
+    const state = new ViewState(plugin, repo as never);
+    const initial = state.load();
+    await state.load(restoredMap.id);
+    finish(oldMap);
+    await initial;
+    expect(state.getSnapshot().map?.id).toBe(restoredMap.id);
+    expect(state.getLoadedMapId()).toBe(restoredMap.id);
+  });
   it("appends multiline quotes to the originating node without overwriting notes or sibling notes", () => {
     const root = createRootMap("Topic", "Root");
     const { map, child } = addChildNode(root, root.rootNodeId, { title: "Child" });
