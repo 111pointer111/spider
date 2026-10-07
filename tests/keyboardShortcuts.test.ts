@@ -5,6 +5,7 @@ import {
   shouldHandleCanvasNavigation,
   shouldHandleViewKeydown,
   shouldGoToParentFromShiftTab,
+  shouldSaveSelectionFromEnter,
 } from "../src/ui/keyboardShortcuts";
 
 function createTarget(matches: string[] = []): EventTarget {
@@ -28,6 +29,17 @@ function createEvent(overrides: Partial<KeyboardEvent> = {}): KeyboardEvent {
 }
 
 describe("Spider keyboard shortcut scope", () => {
+  it("saves selected answers with Enter while preserving native controls and modifiers", () => {
+    expect(shouldSaveSelectionFromEnter(createEvent({ key: "Enter" }), true)).toBe(true);
+    expect(shouldSaveSelectionFromEnter(createEvent({ key: "Enter" }), false)).toBe(false);
+    expect(shouldSaveSelectionFromEnter(createEvent(), true)).toBe(false);
+    for (const control of ["button", "input", "textarea", "select", "contenteditable", "a[href]"]) {
+      expect(shouldSaveSelectionFromEnter(createEvent({ key: "Enter", target: createTarget([control]) }), true)).toBe(false);
+    }
+    for (const modifier of ["shiftKey", "metaKey", "ctrlKey", "altKey", "isComposing", "defaultPrevented"] as const) {
+      expect(shouldSaveSelectionFromEnter(createEvent({ key: "Enter", [modifier]: true }), true)).toBe(false);
+    }
+  });
   it("keeps Tab available for standard interactive controls", () => {
     expect(shouldCreateBranchFromTab(createEvent({ target: createTarget(["button"]) }), true, true)).toBe(false);
     expect(shouldCreateBranchFromTab(createEvent({ target: createTarget(["textarea"]) }), true, true)).toBe(false);
@@ -81,6 +93,7 @@ describe("Spider selection keyboard routing", () => {
     const event = createEvent({ target: doc.body });
     expect(getSelectionInside(root)).toBe("自注意力机制");
     expect(shouldHandleViewKeydown(event, root)).toBe(true);
+    expect(shouldHandleViewKeydown(createEvent({ target: doc.body, key: "Enter" }), root)).toBe(true);
     expect(shouldCreateBranchFromTab(event, true, Boolean(getSelectionInside(root)))).toBe(true);
     expect(shouldHandleViewKeydown(createEvent({ target: doc.body, key: "ArrowDown" }), root)).toBe(false);
   });

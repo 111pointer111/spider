@@ -3,6 +3,8 @@ import type BranchChatMapPlugin from "./main";
 import { DEFAULT_EXPORT_DIR } from "./constants";
 import { t } from "./i18n";
 import { OpenAICompatibleProvider, type ApiTestResult } from "./ai/openAICompatibleProvider";
+import { renderTeachingStyleSettings } from "./teachingStyleSettings";
+import type { TranslationKey } from "./i18n";
 
 export { DEFAULT_SETTINGS } from "./settingsDefaults";
 
@@ -20,13 +22,28 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     const language = this.plugin.settings.language;
     containerEl.empty();
+    containerEl.addClass("spider-settings");
 
-    new Setting(containerEl).setName(t(language, "settingsTitle")).setHeading();
+    const header = containerEl.createDiv({ cls: "spider-settings-header" });
+    const title = header.createDiv({ cls: "spider-settings-title" });
+    title.createEl("h2", { text: "Spider" });
+    title.createEl("span", { text: this.plugin.manifest.version, cls: "spider-settings-version" });
+    header.createEl("p", { text: t(language, "settingsIntro") });
+    header.createEl("a", { text: t(language, "viewReleaseNotes"), href: "https://github.com/111pointer111/spider/releases" });
 
-    new Setting(containerEl)
+    const section = (name: TranslationKey, description?: TranslationKey): HTMLElement => {
+      const el = containerEl.createEl("section", { cls: "spider-settings-section" });
+      el.createEl("h3", { text: t(language, name) });
+      if (description) el.createEl("p", { text: t(language, description), cls: "spider-settings-description" });
+      return el;
+    };
+    const general = section("settingsGeneral");
+
+    new Setting(general)
       .setName(t(language, "settingLanguageName"))
       .setDesc(t(language, "settingLanguageDesc"))
       .addDropdown((dropdown) => {
+        dropdown.selectEl.setAttribute("aria-label", t(language, "settingLanguageName"));
         dropdown
           .addOption("zh-CN", "简体中文")
           .addOption("en", "English")
@@ -37,10 +54,12 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    const connection = section("settingsConnection", "settingsConnectionDesc");
+    new Setting(connection)
       .setName(t(language, "settingApiBaseUrlName"))
       .setDesc(t(language, "settingApiBaseUrlDesc"))
       .addText((text) => {
+        text.inputEl.setAttribute("aria-label", t(language, "settingApiBaseUrlName"));
         text
           .setPlaceholder("https://api.openai.com/v1")
           .setValue(this.plugin.settings.apiBaseUrl)
@@ -49,10 +68,11 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(connection)
       .setName(t(language, "settingApiKeyName"))
       .setDesc(t(language, "settingApiKeyDesc"))
       .addText((text) => {
+        text.inputEl.setAttribute("aria-label", t(language, "settingApiKeyName"));
         text.inputEl.type = "password";
         text
           .setPlaceholder("sk-...")
@@ -62,10 +82,11 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(connection)
       .setName(t(language, "settingModelName"))
       .setDesc(t(language, "settingModelDesc"))
       .addText((text) => {
+        text.inputEl.setAttribute("aria-label", t(language, "settingModelName"));
         text
           .setPlaceholder("gpt-4o-mini")
           .setValue(this.plugin.settings.model)
@@ -74,7 +95,7 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    const apiTestSetting = new Setting(containerEl)
+    const apiTestSetting = new Setting(connection)
       .setName(t(language, "apiTest"))
       .setDesc(this.apiTestResult ? formatApiTestResult(this.apiTestResult) : t(language, "apiTestDesc"));
 
@@ -96,10 +117,15 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
         });
     });
 
-    new Setting(containerEl)
+    const learning = section("settingsLearning", "settingsLearningDesc");
+    renderTeachingStyleSettings(learning, this.plugin, () => this.display());
+
+    const exports = section("settingsExport", "settingsExportDesc");
+    new Setting(exports)
       .setName(t(language, "settingExportFolderName"))
       .setDesc(t(language, "settingExportFolderDesc"))
       .addText((text) => {
+        text.inputEl.setAttribute("aria-label", t(language, "settingExportFolderName"));
         text
           .setPlaceholder(DEFAULT_EXPORT_DIR)
           .setValue(this.plugin.settings.defaultExportFolder)
@@ -108,10 +134,12 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    const interaction = section("settingsInteraction", "settingsInteractionDesc");
+    new Setting(interaction)
       .setName(t(language, "settingTabName"))
       .setDesc(t(language, "settingTabDesc"))
       .addToggle((toggle) => {
+        toggle.toggleEl.setAttribute("aria-label", t(language, "settingTabName"));
         toggle
           .setValue(this.plugin.settings.useTabToCreateChildNodes)
           .onChange(async (value) => {
@@ -119,10 +147,11 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(interaction)
       .setName(t(language, "settingParentContextName"))
       .setDesc(t(language, "settingParentContextDesc"))
       .addToggle((toggle) => {
+        toggle.toggleEl.setAttribute("aria-label", t(language, "settingParentContextName"));
         toggle
           .setValue(this.plugin.settings.includeParentContext)
           .onChange(async (value) => {
@@ -130,10 +159,11 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(interaction)
       .setName(t(language, "settingFullContextName"))
       .setDesc(t(language, "settingFullContextDesc"))
       .addToggle((toggle) => {
+        toggle.toggleEl.setAttribute("aria-label", t(language, "settingFullContextName"));
         toggle
           .setValue(this.plugin.settings.includeFullContext)
           .onChange(async (value) => {
@@ -141,10 +171,11 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(interaction)
       .setName(t(language, "settingStreamName"))
       .setDesc(t(language, "settingStreamDesc"))
       .addToggle((toggle) => {
+        toggle.toggleEl.setAttribute("aria-label", t(language, "settingStreamName"));
         toggle
           .setValue(this.plugin.settings.streamResponses)
           .onChange(async (value) => {
@@ -152,10 +183,11 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(interaction)
       .setName(t(language, "settingAutoSummaryName"))
       .setDesc(t(language, "settingAutoSummaryDesc"))
       .addToggle((toggle) => {
+        toggle.toggleEl.setAttribute("aria-label", t(language, "settingAutoSummaryName"));
         toggle
           .setValue(this.plugin.settings.autoSummarizeNodes)
           .onChange(async (value) => {
@@ -163,7 +195,7 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
           });
       });
 
-    new Setting(containerEl)
+    new Setting(interaction)
       .setName(t(language, "settingOnboardingName"))
       .setDesc(t(language, "settingOnboardingDesc"))
       .addButton((button) => {
@@ -175,6 +207,7 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
             new Notice(t(language, "settingOnboardingRestored"));
           });
       });
+    containerEl.createEl("p", { text: t(language, "settingsPrivacy"), cls: "spider-settings-privacy" });
   }
 }
 

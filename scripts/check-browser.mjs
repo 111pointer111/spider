@@ -1,11 +1,11 @@
 import { context } from "esbuild";
-import { copyFile, mkdir } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const outdir = resolve("artifacts/browser-check");
 await mkdir(outdir, { recursive: true });
 await copyFile("tests/browser/index.html", `${outdir}/index.html`);
-await copyFile("src/styles.css", `${outdir}/styles.css`);
+await writeFile(`${outdir}/styles.css`, `${await readFile("src/styles.css", "utf8")}\n${await readFile("src/settings.css", "utf8")}`);
 const build = await context({
   entryPoints: ["tests/browser/branchNavigation.js"],
   outfile: `${outdir}/checks.js`,

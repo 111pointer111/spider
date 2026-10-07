@@ -7,7 +7,7 @@ import type { BranchChatMapController } from "./BranchChatMapApp";
 import { confirmAction, confirmDelete } from "./ConfirmModal";
 import { useActiveViewState, usePluginSettings } from "./useBranchChatMapState";
 import { getOnboardingGuideVariant } from "./onboarding";
-import { getSelectionInside, shouldCreateBranchFromTab, shouldGoToParentFromShiftTab, shouldHandleCanvasNavigation } from "./keyboardShortcuts";
+import { getSelectionInside, shouldCreateBranchFromTab, shouldGoToParentFromShiftTab, shouldHandleCanvasNavigation, shouldSaveSelectionFromEnter } from "./keyboardShortcuts";
 import { openPluginSettings } from "./openPluginSettings";
 import { getMissingAiConfiguration } from "../settingsDefaults";
 import type { BranchSource } from "../types";
@@ -104,6 +104,14 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
 
   const handleKeydown = useCallback(
     (event: KeyboardEvent) => {
+      const selection = getMessageSelection(rootRef.current);
+      if (shouldSaveSelectionFromEnter(event, Boolean(selection)) && selection && node) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (viewState?.appendSelectionToNote(node.id, selection.text)) new Notice(t(language, "selectionSaved"));
+        rootRef.current?.ownerDocument.getSelection()?.removeAllRanges();
+        return;
+      }
       const selectedText = getSelectionInside(rootRef.current);
       if (shouldCreateBranchFromTab(event, settings.useTabToCreateChildNodes, Boolean(selectedText))) {
         event.preventDefault();
@@ -201,7 +209,7 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         }
       }
     },
-    [confirmAndDeleteNode, createChild, settings.useTabToCreateChildNodes, viewState],
+    [confirmAndDeleteNode, createChild, language, node, settings.useTabToCreateChildNodes, viewState],
   );
 
   useEffect(() => {
@@ -246,6 +254,10 @@ export function BranchChatMapChatApp({ plugin, onController }: BranchChatMapChat
         streamingMessage={streamingMessages[node.id]}
         onCancel={() => vs?.cancelGeneration()}
         onCreateChild={createChild}
+        onSaveSelection={(text) => {
+          if (vs?.appendSelectionToNote(node.id, text)) new Notice(t(language, "selectionSaved"));
+        }}
+        onNoteChange={(value) => vs?.updateNodeNote(node.id, value)}
         onDeleteNode={(nodeId) => { void confirmAndDeleteNode(nodeId); }}
         onDismissOnboarding={dismissOnboarding}
         onDraftChange={(value) => vs?.updateDraft(node.id, value)}

@@ -15,6 +15,9 @@ jobs:
           node-version: 22
           cache: "npm"
       - run: npm ci
+      - run: npm test
+      - name: Verify versions and user-facing release notes
+        run: node scripts/release-notes.mjs "$GITHUB_REF_NAME"
       - run: npm run build
       - name: Release
         uses: softprops/action-gh-release@v2
@@ -23,4 +26,4 @@ jobs:
             main.js
             styles.css
             manifest.json
-          generate_release_notes: true
+          body_path: .github/release-notes/${{ github.ref_name }}.md

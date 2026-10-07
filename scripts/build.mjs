@@ -18,6 +18,7 @@ async function combineStyles() {
   if (existsSync("src/styles.css")) {
     chunks.push(await readFile("src/styles.css", "utf8"));
   }
+  chunks.push(await readFile("src/settings.css", "utf8"));
 
   if (chunks.length > 0) {
     await writeFile("styles.css", chunks.join("\n"), "utf8");

@@ -55,7 +55,12 @@ export function shouldHandleViewKeydown(event: KeyboardEvent, root: HTMLElement)
   const isDocumentTarget = event.target === doc || event.target === doc.body || event.target === doc.documentElement;
   // Selecting non-focusable answer text can leave keyboard focus on the document body.
   return root.contains(event.target as Node | null)
-    || (isDocumentTarget && event.key === "Tab" && Boolean(getSelectionInside(root)));
+    || (isDocumentTarget && (event.key === "Tab" || event.key === "Enter") && Boolean(getSelectionInside(root)));
+}
+
+export function shouldSaveSelectionFromEnter(event: KeyboardEvent, hasMessageSelection: boolean): boolean {
+  return hasMessageSelection && event.key === "Enter" && !event.defaultPrevented && !event.isComposing
+    && !event.shiftKey && !hasUnsupportedModifier(event) && !isInteractiveTarget(event.target);
 }
 
 export function shouldCreateBranchFromTab(event: KeyboardEvent, enabled: boolean, hasSelection: boolean): boolean {

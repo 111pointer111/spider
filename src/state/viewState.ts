@@ -392,6 +392,16 @@ export class ViewState {
     this.commitMap(updateNode(map, nodeId, { note: normalizedNote }));
   }
 
+  appendSelectionToNote(nodeId: NodeId, text: string): boolean {
+    const node = this.state.map?.nodes[nodeId];
+    const selected = text.trim();
+    if (!node || !selected) return false;
+    // Quotes share the existing editable note, so old maps and all exports keep working.
+    const quote = selected.split(/\r?\n/).map((line) => `> ${line}`).join("\n");
+    this.updateNodeNote(nodeId, [node.note?.trimEnd(), quote].filter(Boolean).join("\n\n"));
+    return true;
+  }
+
   updatePosition(nodeId: NodeId, position: { x: number; y: number }): void {
     const { map } = this.state;
     if (!map) {

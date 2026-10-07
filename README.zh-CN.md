@@ -14,6 +14,8 @@
 
 ![spider screenshot](.github/screenshot.png)
 
+[更新说明](CHANGELOG.md) · [提问统计说明](docs/usage-statistics.md)
+
 > 首次安装时 Spider 会跟随 Obsidian 的界面语言，也可以随时在设置中切换中文或 English。
 
 ---
@@ -47,6 +49,12 @@
 - **回到原句**：返回父节点或点击路径导航时恢复阅读位置，并短暂高亮分支的来源；普通节点切换也保留本次会话的阅读位置
 - **辅助动作**：重试、总结、AI 自动起标题
 
+### 📚 教学风格与随记
+- 设置 → 学习方式：循序渐进、启发提问、简明要点，或自定义系统提示词；下一次提问生效
+- 选中 AI 回答 → `Enter`：保存到当前节点的个人随记，原有笔记会保留
+- 输入框上方展开「个人随记」，编辑摘录和自己的理解；自动保存
+- 导出包的 `notes.md` 汇总随记，保留节点标题、完整路径、层级和原节点链接
+
 ### 🕸️ 交互式知识图谱
 - **全标签页画布**（React Flow 驱动）
 - **点击节点切换上下文**，右侧聊天面板自动跟随
@@ -61,6 +69,7 @@
 Spider Maps/
   ├── index.md                  # Obsidian 入口笔记
   ├── brief.md                  # 关键结论、待研究问题与进度
+  ├── notes.md                  # 带节点路径和层级的随记汇总
   ├── nodes/                    # 每个节点一份独立 md
   ├── map.canvas                # 可编辑知识图谱
   └── map.svg                   # 可缩放、可分享的知识图谱图片
@@ -102,7 +111,7 @@ Spider Maps/
 | `Shift + Tab` | 图谱画布获得焦点时返回父节点 |
 | `← →` | 图谱画布获得焦点时在父节点与第一个子节点间移动 |
 | `↑ ↓` | 图谱画布获得焦点时在兄弟节点之间移动 |
-| `Enter` | 发送消息（在输入框） |
+| `Enter` | 选中 AI 正文时加入节点随记；在输入框中发送消息 |
 | `Shift + Enter` | 换行（在输入框） |
 | `Esc` | 清除当前选区 |
 | `Delete` / `Backspace` | 图谱画布获得焦点时删除当前非根节点 |
@@ -116,6 +125,7 @@ Spider Maps/
 | API Base URL | OpenAI 兼容端点 | `https://api.openai.com/v1` |
 | API Key | 你的 API key（密码输入框，本地存储） | — |
 | Model | 该端点支持的任意模型名 | `gpt-4o-mini` |
+| Teaching style | 内置教学模板或自定义系统提示词，仅作用于对话回答 | 默认 |
 | Interface Language | 中文 / English | 跟随 Obsidian |
 | Include parent context | 子节点请求是否带父节点的标题/摘要/锚点 | ✅ 开 |
 | Include full context | 把图谱中其他分支也作为参考（更费 token） | ❌ 关 |
@@ -183,7 +193,7 @@ __mocks__/     Obsidian API 的桩模块（让 vitest 跑得起来）
 
 - [ ] 多选节点 + 批量操作
 - [ ] 节点引用 / 反向链接（自动追踪"哪个节点引用了我"）
-- [ ] 自定义 system prompt
+- [x] 自定义 system prompt 与教学风格模板
 - [ ] 导出时可选附 AI 摘要
 
 ---

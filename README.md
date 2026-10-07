@@ -14,6 +14,8 @@ An Obsidian plugin that turns ChatGPT / Claude / DeepSeek / any OpenAI-compatibl
 
 ![spider screenshot](.github/screenshot.png)
 
+[Release notes](CHANGELOG.md)
+
 > The screenshot shows the Chinese interface. Spider follows Obsidian's language on first install, and you can switch between Chinese and English at any time.
 
 ---
@@ -61,6 +63,7 @@ An Obsidian plugin that turns ChatGPT / Claude / DeepSeek / any OpenAI-compatibl
 Spider Maps/
   ├── index.md                  # Obsidian entry-point note
   ├── brief.md                  # Findings, open questions, and progress
+  ├── notes.md                  # Personal notes with node paths and depth
   ├── nodes/                    # One Markdown file per node
   ├── map.canvas                # Editable knowledge map
   └── map.svg                   # Sharp, shareable knowledge map image
@@ -94,6 +97,14 @@ Spider follows Obsidian's language on first install. You can switch between Chin
 
 ---
 
+## Learning styles and personal notes
+
+- Settings → Learning style: choose Step by step, Socratic, Concise, or a custom system prompt. Changes apply to your next question.
+- Select AI answer text and press `Enter` to save a quote to its node. Existing notes are preserved.
+- Expand Personal notes above the composer to edit your insights. Changes are saved automatically.
+- Export packages include `notes.md`, preserving node titles, full paths, depth, and links to original node files.
+- No client-side usage analytics are collected.
+
 ## ⌨️ Keyboard Shortcuts
 
 | Key | Action |
@@ -102,7 +113,7 @@ Spider follows Obsidian's language on first install. You can switch between Chin
 | `Shift + Tab` | On the focused map canvas → go to the parent branch |
 | `← →` | On the focused map canvas → parent ↔ first child |
 | `↑ ↓` | On the focused map canvas → move between sibling nodes |
-| `Enter` | Send message (inside composer) |
+| `Enter` | Save selected AI text to node notes; send a message inside the composer |
 | `Shift + Enter` | Newline (inside composer) |
 | `Esc` | Clear current selection |
 | `Delete` / `Backspace` | On the focused map canvas → delete the current non-root node |
@@ -183,7 +194,7 @@ __mocks__/     Obsidian API stub for vitest
 
 - [ ] Multi-select nodes + batch operations
 - [ ] Node backlinks (auto-track "which nodes reference me")
-- [ ] Custom system prompts
+- [x] Custom system prompts and teaching styles
 - [ ] Optional AI summary attached to export package
 
 ---

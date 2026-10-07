@@ -17,6 +17,8 @@ const settings: BranchChatMapSettings = {
   includeFullContext: false,
   streamResponses: true,
   onboardingCardDismissed: false,
+  teachingStyle: "default",
+  customSystemPrompt: "",
 };
 
 function createViewState(initialMap: ChatMap, settingsOverride: Partial<BranchChatMapSettings> = {}): ViewState {
@@ -38,6 +40,17 @@ function createViewState(initialMap: ChatMap, settingsOverride: Partial<BranchCh
 }
 
 describe("ViewState", () => {
+  it("appends multiline quotes to the originating node without overwriting notes or sibling notes", () => {
+    const root = createRootMap("Topic", "Root");
+    const { map, child } = addChildNode(root, root.rootNodeId, { title: "Child" });
+    const vs = createViewState(updateNode(map, root.rootNodeId, { note: "自己的理解" }));
+    vs.setActiveNode(child.id);
+    expect(vs.appendSelectionToNote(root.rootNodeId, "  第一行\n第二行  ")).toBe(true);
+    expect(vs.getSnapshot().map?.nodes[root.rootNodeId]?.note).toBe("自己的理解\n\n> 第一行\n> 第二行");
+    expect(vs.getActiveNode()?.note).toBeUndefined();
+    expect(vs.appendSelectionToNote("missing", "quote")).toBe(false);
+    expect(vs.appendSelectionToNote(child.id, "  ")).toBe(false);
+  });
   it("preserves new branches, notes, and status while streaming and generating metadata", async () => {
     let finishStream!: () => void;
     let streamReady!: () => void;

@@ -5,6 +5,7 @@ import { addChildNode, appendMessage, createMessage, createRootMap } from "../..
 import { createDefaultSettings } from "../../src/settingsDefaults";
 import { OpenAICompatibleProvider } from "../../src/ai/openAICompatibleProvider";
 import { findSourceRange } from "../../src/ui/messageSelection";
+import { setupLearningChecks } from "./learningExperience";
 MarkdownRenderer.render = async (_app, markdown, root) => {
   await new Promise((resolve) => setTimeout(resolve, markdown.startsWith("slow") ? 90 : 5));
   for (const paragraph of markdown.split("\n\n")) {
@@ -52,7 +53,7 @@ let settingsRevision = 0;
 const plugin = {
   settings: { ...createDefaultSettings("en"), apiKey: "local-test", model: "local-test", autoSummarizeNodes: false, onboardingCardDismissed: true },
   app: {},
-  manifest: { id: "spider" },
+  manifest: { id: "spider", version: "0.1.12" },
   saveSettings: async () => {
   },
   subscribeSettings: (listener) => {
@@ -60,6 +61,11 @@ const plugin = {
     return () => settingsListeners.delete(listener);
   },
   getSettingsRevision: () => settingsRevision
+};
+plugin.updateSettings = async (patch) => {
+  plugin.settings = { ...plugin.settings, ...patch };
+  settingsRevision++;
+  settingsListeners.forEach((listener) => listener());
 };
 const setTabEnabled = (enabled) => {
   plugin.settings = { ...plugin.settings, useTabToCreateChildNodes: enabled };
@@ -116,6 +122,7 @@ const pressTab = async () => {
   return event;
 };
 Object.assign(window, { spiderChecks: { vs, view, originalAnswer, rootId: rootMap.rootNodeId, siblingId: siblingResult.child.id, setTabEnabled, selectSecondOccurrence, selectRange, primaryAnswer, scroller, switchNode, pressTab, delay, waitFor, assert, OpenAICompatibleProvider, findSourceRange } });
+setupLearningChecks(plugin, window.spiderChecks);
 document.querySelector("#prepare").addEventListener("click", async () => {
   await switchNode(rootMap.rootNodeId);
   selectSecondOccurrence();

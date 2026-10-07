@@ -10,6 +10,22 @@ function cardText(canvas: JsonCanvasFile, nodeId: string): string {
 }
 
 describe("exporters", () => {
+  it("exports quoted notes with node paths, explicit depth, and links in both languages", () => {
+    const root = createRootMap("Physics", "Mechanics");
+    const { map, child } = addChildNode(root, root.rootNodeId, { title: "Inertia" });
+    const noted = updateNode(updateNode(map, root.rootNodeId, { note: "My overview" }), child.id, { note: "> An important insight\n\nMy interpretation" });
+    for (const language of ["zh-CN", "en"] as const) {
+      const files = buildExportFiles(noted, { language });
+      const notes = files.find((file) => file.path === "notes.md")!.content;
+      expect(notes).toContain("## Mechanics");
+      expect(notes).toContain("### Inertia");
+      expect(notes).toContain("Mechanics / Inertia");
+      expect(notes).toContain(language === "en" ? "Depth: 1" : "层级: 1");
+      expect(notes).toContain("> An important insight\n\nMy interpretation");
+      expect(notes).toContain(`[Inertia](nodes/${files.find((file) => file.path.startsWith("nodes/02-"))!.path.slice(6)})`);
+      expect(files.find((file) => file.path === "index.md")!.content).toContain("[notes.md](notes.md)");
+    }
+  });
   it("exports markdown, mermaid, and canvas with node content", () => {
     const rootMap = createRootMap("AI learning");
     const childResult = addChildNode(rootMap, rootMap.rootNodeId, {
@@ -57,6 +73,7 @@ describe("exporters", () => {
     expect(files.map((file) => file.path)).toEqual([
       "index.md",
       "brief.md",
+      "notes.md",
       expect.stringMatching(/^nodes\/01-/),
       expect.stringMatching(/^nodes\/02-/),
       "map.canvas",

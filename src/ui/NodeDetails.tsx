@@ -7,6 +7,7 @@ import { OnboardingCard } from "./OnboardingCard";
 import type { OnboardingGuideVariant } from "./onboarding";
 import { useReadingPosition } from "./useReadingPosition";
 import { SelectionBranchHint } from "./SelectionBranchHint";
+import { NodeNotes } from "./NodeNotes";
 
 interface NodeDetailsProps {
   app: App;
@@ -27,6 +28,8 @@ interface NodeDetailsProps {
   streamingMessage?: ChatMessage;
   onCancel(this: void): void;
   onCreateChild(this: void, anchorText?: string, source?: BranchSource): void;
+  onSaveSelection(this: void, text: string): void;
+  onNoteChange(this: void, value: string): void;
   onDeleteNode(this: void, nodeId: NodeId): void;
   onDismissOnboarding(this: void): void;
   onDraftChange(this: void, value: string): void;
@@ -80,6 +83,8 @@ export function NodeDetails({
   streamingMessage,
   onCancel,
   onCreateChild,
+  onSaveSelection,
+  onNoteChange,
   onDeleteNode,
   onDismissOnboarding,
   onDraftChange,
@@ -222,7 +227,7 @@ export function NodeDetails({
 
         </div>
 
-        <SelectionBranchHint rootRef={scrollRef} nodeId={node.id} enabled={tabBranchEnabled} language={language} onCreateChild={onCreateChild} />
+        <SelectionBranchHint rootRef={scrollRef} nodeId={node.id} enabled={tabBranchEnabled} language={language} onCreateChild={onCreateChild} onSaveSelection={onSaveSelection} />
 
         {showScrollTop ? (
           <button className="bcm-scroll-jump bcm-scroll-top" type="button" onClick={() => scrollToTop()} aria-label={t(language, "scrollTop")}>
@@ -237,60 +242,63 @@ export function NodeDetails({
         ) : null}
       </div>
 
-      {error ? (
-        <div className="bcm-error">
-          <span>{error}</span>
-          {errorDetails ? (
-            <details>
-              <summary>{t(language, "details")}</summary>
-              <pre>{errorDetails}</pre>
-            </details>
-          ) : null}
-          <button type="button" onClick={onRetry}>{t(language, "retry")}</button>
-        </div>
-      ) : null}
-
-      <div className="bcm-composer">
-        {!canUseAi ? (
-          <section className="bcm-provider-setup" aria-labelledby="spider-provider-setup-title">
-            <div>
-              <div className="bcm-provider-setup-title" id="spider-provider-setup-title">{t(language, "connectAiTitle")}</div>
-              <div className="bcm-provider-setup-body">{t(language, "connectAiBody")}</div>
-            </div>
-            <button type="button" onClick={onOpenSettings}>{t(language, "openSettings")}</button>
-          </section>
-        ) : onboardingVariant === "ask" ? (
-          <OnboardingCard language={language} variant="ask" onDismiss={onDismissOnboarding} />
-        ) : null}
-        <textarea
-          ref={inputRef}
-          data-branch-chat-input="true"
-          value={draft}
-          aria-label={t(language, "composerLabel")}
-          placeholder={t(language, "composerPlaceholder")}
-          onChange={(e) => onDraftChange(e.currentTarget.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey && !isImeComposing(e)) {
-              e.preventDefault();
-              if (canUseAi) {
-                onSend();
-              }
-            }
-          }}
-        />
-        <div className="bcm-composer-footer">
-          <div className="bcm-detail-actions">
-            <button type="button" onClick={() => onCreateChild()} title="Tab">{t(language, "newChild")}</button>
-            <button type="button" onClick={onGoParent} disabled={!parent} title="Shift + Tab">{t(language, "parent")}</button>
-            <button type="button" onClick={() => onDeleteNode(node.id)} disabled={!parent}>{t(language, "deleteNode")}</button>
-            <button type="button" onClick={onSummarize} disabled={!canUseAi} title={!canUseAi ? t(language, "missingApiKey") : undefined}>{t(language, "summarize")}</button>
+      <div className="bcm-detail-footer">
+        <NodeNotes key={`${mapId}/${node.id}`} note={node.note} language={language} onChange={onNoteChange} />
+        {error ? (
+          <div className="bcm-error">
+            <span>{error}</span>
+            {errorDetails ? (
+              <details>
+                <summary>{t(language, "details")}</summary>
+                <pre>{errorDetails}</pre>
+              </details>
+            ) : null}
+            <button type="button" onClick={onRetry}>{t(language, "retry")}</button>
           </div>
-          <div className="bcm-composer-actions">
-            {isPending ? (
-              <button type="button" onClick={onCancel}>{t(language, "stop")}</button>
-            ) : (
-              <button type="button" onClick={onSend} disabled={!canUseAi || !draft.trim()}>{t(language, "send")}</button>
-            )}
+        ) : null}
+
+        <div className="bcm-composer">
+          {!canUseAi ? (
+            <section className="bcm-provider-setup" aria-labelledby="spider-provider-setup-title">
+              <div>
+                <div className="bcm-provider-setup-title" id="spider-provider-setup-title">{t(language, "connectAiTitle")}</div>
+                <div className="bcm-provider-setup-body">{t(language, "connectAiBody")}</div>
+              </div>
+              <button type="button" onClick={onOpenSettings}>{t(language, "openSettings")}</button>
+            </section>
+          ) : onboardingVariant === "ask" ? (
+            <OnboardingCard language={language} variant="ask" onDismiss={onDismissOnboarding} />
+          ) : null}
+          <textarea
+            ref={inputRef}
+            data-branch-chat-input="true"
+            value={draft}
+            aria-label={t(language, "composerLabel")}
+            placeholder={t(language, "composerPlaceholder")}
+            onChange={(e) => onDraftChange(e.currentTarget.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey && !isImeComposing(e)) {
+                e.preventDefault();
+                if (canUseAi) {
+                  onSend();
+                }
+              }
+            }}
+          />
+          <div className="bcm-composer-footer">
+            <div className="bcm-detail-actions">
+              <button type="button" onClick={() => onCreateChild()} title="Tab">{t(language, "newChild")}</button>
+              <button type="button" onClick={onGoParent} disabled={!parent} title="Shift + Tab">{t(language, "parent")}</button>
+              <button type="button" onClick={() => onDeleteNode(node.id)} disabled={!parent}>{t(language, "deleteNode")}</button>
+              <button type="button" onClick={onSummarize} disabled={!canUseAi} title={!canUseAi ? t(language, "missingApiKey") : undefined}>{t(language, "summarize")}</button>
+            </div>
+            <div className="bcm-composer-actions">
+              {isPending ? (
+                <button type="button" onClick={onCancel}>{t(language, "stop")}</button>
+              ) : (
+                <button type="button" onClick={onSend} disabled={!canUseAi || !draft.trim()}>{t(language, "send")}</button>
+              )}
+            </div>
           </div>
         </div>
       </div>

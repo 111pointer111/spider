@@ -1,6 +1,7 @@
 import type { AppLanguage, ChatMap, ChatMessage, ChatNode } from "../types";
 import { cleanText, escapeMermaid, markdownToPlainText, slugifyFileName } from "../utils/text";
 import { renderGraphSvg } from "./graphSvg";
+import { exportNodeNotes } from "./nodeNotes";
 
 type CanvasSide = "top" | "right" | "bottom" | "left";
 type CanvasEnd = "none" | "arrow";
@@ -532,7 +533,7 @@ function renderNodeMarkdown(
   lines.push(`> [!summary] ${node.title}`);
   lines.push(`> ${labels.status}: ${nodeStatusLabel(node, labels)}`);
   if (node.note) {
-    lines.push(`> ${labels.personalNote}: ${node.note}`);
+    lines.push(...node.note.split(/\r?\n/).map((line, index) => `> ${index === 0 ? `${labels.personalNote}: ` : ""}${line}`));
   }
   lines.push(`> ${labels.nodeSummary}: ${node.summary || firstUserQuestion(node) || node.anchorText || labels.noSummary}`);
   if (node.anchorText) {
@@ -816,6 +817,7 @@ export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions 
     "",
     `- ${labels.canvasView}: ${markdownLink("map.canvas", "map.canvas")}`,
     `- ${labels.researchBrief}: ${markdownLink("brief.md", "brief.md")}`,
+    `- ${labels.personalNote}: ${markdownLink("notes.md", "notes.md")}`,
     `- ${labels.graphImage}: ${markdownLink("map.svg", "map.svg")}`,
     "",
     "![](map.svg)",
@@ -829,6 +831,7 @@ export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions 
     "",
     `- \`index.md\`: ${labels.indexEntry}`,
     `- \`brief.md\`: ${labels.researchBrief}`,
+    `- \`notes.md\`: ${labels.personalNote}`,
     `- \`nodes/\`: ${labels.nodesFolder}`,
     `- \`map.canvas\`: ${labels.canvasView}`,
     `- \`map.svg\`: ${labels.graphImage}`,
@@ -864,6 +867,10 @@ export function buildExportFiles(map: ChatMap, options: BuildExportFilesOptions 
     {
       path: "brief.md",
       content: researchBrief,
+    },
+    {
+      path: "notes.md",
+      content: exportNodeNotes(map, nodes, nodeFileNames, options.language ?? "zh-CN"),
     },
     ...nodes.map((node, index) => ({
       path: `nodes/${nodeFileNames.get(node.id) ?? nodeFileName(index, node)}`,

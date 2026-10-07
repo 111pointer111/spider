@@ -1,6 +1,7 @@
 import { requestUrl } from "obsidian";
 import type { AiChatRequest, AiProvider, AppLanguage, BranchChatMapSettings, ChatMessage, ChatNode } from "../types";
 import { t } from "../i18n";
+import { resolveTeachingPrompt } from "./teachingPrompts";
 
 interface ChatCompletionResponse {
   choices?: Array<{
@@ -37,7 +38,8 @@ export class AiRequestError extends Error {
   }
 }
 
-function buildMessages(request: AiChatRequest, language: AppLanguage): ChatMessage[] {
+function buildMessages(request: AiChatRequest, settings: BranchChatMapSettings): ChatMessage[] {
+  const { language } = settings;
   const messages: ChatMessage[] = [];
 
   messages.push({
@@ -49,6 +51,11 @@ function buildMessages(request: AiChatRequest, language: AppLanguage): ChatMessa
         : "Unless the user explicitly asks for another language, respond in English. Keep answers clear and useful for learning.",
     createdAt: new Date().toISOString(),
   });
+
+  const teachingPrompt = resolveTeachingPrompt(settings);
+  if (teachingPrompt) {
+    messages.push({ id: "system_teaching", role: "system", content: teachingPrompt, createdAt: new Date().toISOString() });
+  }
 
   if (request.includeParentContext && request.parent) {
     const context = [
@@ -92,11 +99,11 @@ export class OpenAICompatibleProvider implements AiProvider {
   }
 
   async chat(request: AiChatRequest): Promise<string> {
-    return this.requestChatCompletion(buildMessages(request, this.settings.language), request.model, request.signal);
+    return this.requestChatCompletion(buildMessages(request, this.settings), request.model, request.signal);
   }
 
   async *streamChat(request: AiChatRequest): AsyncGenerator<string> {
-    yield* this.requestChatCompletionStream(buildMessages(request, this.settings.language), request.model, request.signal);
+    yield* this.requestChatCompletionStream(buildMessages(request, this.settings), request.model, request.signal);
   }
 
   async summarizeNode(node: ChatNode, signal?: AbortSignal): Promise<string> {

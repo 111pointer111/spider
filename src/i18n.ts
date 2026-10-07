@@ -1,6 +1,32 @@
 import type { AppLanguage, ChatNodeStatus, ChatRole } from "./types";
 
 export type TranslationKey =
+  | "selectionSaved"
+  | "saveSelection"
+  | "notesHint"
+  | "settingsIntro"
+  | "settingsGeneral"
+  | "settingsConnection"
+  | "settingsConnectionDesc"
+  | "settingsLearning"
+  | "settingsLearningDesc"
+  | "settingTeachingStyle"
+  | "styleDefault"
+  | "styleTeacher"
+  | "styleSocratic"
+  | "styleConcise"
+  | "styleCustom"
+  | "settingSystemPrompt"
+  | "systemPromptDesc"
+  | "systemPromptPreview"
+  | "systemPromptPlaceholder"
+  | "settingsInteraction"
+  | "settingsInteractionDesc"
+  | "settingsExport"
+  | "settingsExportDesc"
+  | "settingsPrivacy"
+  | "viewReleaseNotes"
+
   | "appName"
   | "openMap"
   | "createChildCommand"
@@ -143,6 +169,31 @@ export type TranslationKey =
 type TranslationDictionary = Record<TranslationKey, string>;
 
 const zh: TranslationDictionary = {
+  selectionSaved: "已加入当前节点随记",
+  saveSelection: "加入随记",
+  notesHint: "选中 AI 回答，按 Enter 摘录；也可以在这里写下自己的理解。",
+  settingsIntro: "配置你的 AI，选择适合自己的学习方式。",
+  settingsGeneral: "通用",
+  settingsConnection: "AI 连接",
+  settingsConnectionDesc: "使用你自己的 API 服务。密钥保存在当前笔记库中。",
+  settingsLearning: "学习方式",
+  settingsLearningDesc: "决定 AI 如何讲解概念；修改后从下一次提问开始生效。",
+  settingTeachingStyle: "教学风格",
+  styleDefault: "默认 · 保持原有回答方式",
+  styleTeacher: "循序渐进 · 从基础到全貌",
+  styleSocratic: "启发提问 · 引导自己思考",
+  styleConcise: "简明要点 · 快速掌握概念",
+  styleCustom: "自定义 · 设计自己的老师",
+  settingSystemPrompt: "系统提示词",
+  systemPromptDesc: "可以设定老师的角色、讲解口吻、详细程度和教学方法。留空则使用默认方式。",
+  systemPromptPreview: "模板预览；选择「自定义」可以编写自己的提示词。",
+  systemPromptPlaceholder: "例如：你是一位耐心的物理老师，请用生活中的例子讲解概念……",
+  settingsInteraction: "对话与分支",
+  settingsInteractionDesc: "控制上下文范围和阅读体验。",
+  settingsExport: "笔记与导出",
+  settingsExportDesc: "选中 AI 正文：Tab 创建分支，Enter 加入节点随记。导出会保留节点路径和层次。",
+  settingsPrivacy: "图谱与随记存储在本地。AI 请求只发送到你配置的端点；Spider 不收集使用统计。",
+  viewReleaseNotes: "查看更新说明",
   appName: "Spider",
   openMap: "打开 Spider",
   createChildCommand: "创建分支",
@@ -167,7 +218,7 @@ const zh: TranslationDictionary = {
   selectedSourceHint: "来自上一节点选中的原文",
   branchSource: "追问来源",
   nodeSummaryLabel: "结论",
-  nodeNote: "我的笔记",
+  nodeNote: "个人随记",
   addNodeNote: "添加节点笔记",
   editNodeNote: "编辑节点笔记",
   nodeNotePlaceholder: "记录你的判断、结论或待办，支持 Markdown。",
@@ -211,7 +262,7 @@ const zh: TranslationDictionary = {
   statusArchived: "已归档",
   nodeMessages: "节点消息",
   streaming: "生成中",
-  emptyHint: "先输入一个问题。AI 回复后，选中一句想深入的内容，按 Tab 创建分支。",
+  emptyHint: "先输入一个问题。AI 回复后，选中文字按 Tab 深入探索，按 Enter 保存到随记。",
   composerPlaceholder: "问这个节点的问题。Enter 发送，Shift + Enter 换行。",
   send: "发送",
   stop: "停止",
@@ -284,6 +335,31 @@ const zh: TranslationDictionary = {
 };
 
 const en: TranslationDictionary = {
+  selectionSaved: "Saved to this node’s notes",
+  saveSelection: "Save to notes",
+  notesHint: "Select an AI answer and press Enter to save a quote, or write your own insights here.",
+  settingsIntro: "Connect your AI and choose how you want to learn.",
+  settingsGeneral: "General",
+  settingsConnection: "AI connection",
+  settingsConnectionDesc: "Use your own API provider. Your key is stored in this vault.",
+  settingsLearning: "Learning style",
+  settingsLearningDesc: "Choose how AI explains concepts. Changes apply to your next question.",
+  settingTeachingStyle: "Teaching style",
+  styleDefault: "Default · original behavior",
+  styleTeacher: "Step by step · build understanding",
+  styleSocratic: "Socratic · learn through questions",
+  styleConcise: "Concise · focus on key ideas",
+  styleCustom: "Custom · design your own teacher",
+  settingSystemPrompt: "System prompt",
+  systemPromptDesc: "Set a teacher’s role, tone, level of detail, and method. Leave blank for the default behavior.",
+  systemPromptPreview: "Template preview. Choose Custom to write your own prompt.",
+  systemPromptPlaceholder: "Example: You are a patient physics teacher. Explain concepts using everyday examples…",
+  settingsInteraction: "Chat and branches",
+  settingsInteractionDesc: "Control context and your reading experience.",
+  settingsExport: "Notes and export",
+  settingsExportDesc: "Select AI text: Tab creates a branch; Enter saves a quote. Exports preserve node paths and hierarchy.",
+  settingsPrivacy: "Maps and notes stay local. AI requests go to your configured endpoint; Spider does not collect usage analytics.",
+  viewReleaseNotes: "Read release notes",
   appName: "Spider",
   openMap: "Open Spider",
   createChildCommand: "Create branch",
@@ -308,7 +384,7 @@ const en: TranslationDictionary = {
   selectedSourceHint: "Selected from the parent branch",
   branchSource: "Source text",
   nodeSummaryLabel: "Summary",
-  nodeNote: "My note",
+  nodeNote: "Personal notes",
   addNodeNote: "Add node note",
   editNodeNote: "Edit node note",
   nodeNotePlaceholder: "Capture your judgment, conclusion, or next step. Markdown is supported.",
@@ -352,7 +428,7 @@ const en: TranslationDictionary = {
   statusArchived: "Archived",
   nodeMessages: "Node messages",
   streaming: "Generating",
-  emptyHint: "Start with a question. After AI replies, select a useful passage and press Tab to create a branch.",
+  emptyHint: "Start with a question. In an AI answer, select text and press Tab to explore further or Enter to save a quote.",
   composerPlaceholder: "Ask a question in this branch. Enter sends; Shift + Enter adds a line.",
   send: "Send",
   stop: "Stop",

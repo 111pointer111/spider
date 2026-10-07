@@ -7,11 +7,18 @@
   #app { height:680px; width:520px; border:1px solid #bbb; position:fixed; right:16px; top:16px; }
   #app>.spider-chat-view { height:100%; }
   #results { white-space:pre-wrap; max-width:calc(100vw - 590px); }
+  #settings { width: 720px; padding:24px; box-sizing:border-box; background:var(--background-primary); }
+  .setting-item { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--background-modifier-border); }
+  .setting-item-info { flex:1; }
+  .setting-item-description { font-size:12px; color:var(--text-muted); }
+  .setting-item-control { display:flex; align-items:center; gap:8px; }
+  :is(input,textarea,select,button) { font:inherit; color:var(--text-normal); background:var(--background-primary); border:1px solid var(--background-modifier-border); padding:6px 10px; }
 </style>
 <h1>Source navigation regression</h1>
 <button id="run">Run source navigation checks</button>
 <button id="prepare">Prepare second occurrence for real Tab</button>
+<button id="learning">Run learning experience checks</button>
 <p id="external">An unrelated Obsidian panel has SelfAttention selected.</p>
 <pre id="results"></pre><div id="app"></div>
+<div id="settings"></div>
 <script type="module" src="/checks.js"></script>
-

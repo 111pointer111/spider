@@ -5,6 +5,7 @@ export type ChatMapId = string;
 export type ChatRole = "system" | "user" | "assistant";
 export type ChatNodeStatus = "open" | "understood" | "archived";
 export type AppLanguage = "zh-CN" | "en";
+export type TeachingStyle = "default" | "teacher" | "socratic" | "concise" | "custom";
 
 export interface ChatMessage {
   id: MessageId;
@@ -68,6 +69,8 @@ export interface BranchChatMapSettings {
   includeFullContext: boolean;
   streamResponses: boolean;
   onboardingCardDismissed: boolean;
+  teachingStyle: TeachingStyle;
+  customSystemPrompt: string;
   lastOpenedMapId?: string;
 }
 

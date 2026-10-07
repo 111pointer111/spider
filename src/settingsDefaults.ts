@@ -20,6 +20,8 @@ export function createDefaultSettings(locale: string): BranchChatMapSettings {
     includeFullContext: false,
     streamResponses: true,
     onboardingCardDismissed: false,
+    teachingStyle: "default",
+    customSystemPrompt: "",
   };
 }
 

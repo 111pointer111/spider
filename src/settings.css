@@ -1,0 +1,46 @@
+/* Native Obsidian controls, arranged for long reading sessions in either theme. */
+.spider-settings {
+  container-type: inline-size;
+  color: var(--text-normal);
+  max-width: 860px;
+  margin-inline: auto;
+}
+
+.spider-settings-header { padding: 4px 0 24px; }
+.spider-settings-title { display: flex; align-items: center; gap: 12px; }
+.spider-settings-title h2 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+.spider-settings-version { color: var(--text-muted); font-size: 0.85rem; }
+.spider-settings-header p { margin: 8px 0 12px; color: var(--text-muted); line-height: 1.6; }
+.spider-settings-header a { font-size: 0.9rem; color: var(--interactive-accent); text-underline-offset: 3px; }
+.spider-settings-section { padding: 22px 0 12px; border-top: 1px solid var(--background-modifier-border); }
+.spider-settings-section h3 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 650; }
+.spider-settings-description { margin: 0 0 12px; color: var(--text-muted); line-height: 1.6; max-width: 70ch; }
+.spider-settings .setting-item { gap: 20px; padding: 14px 0; }
+.spider-settings-section > .setting-item:first-of-type { border-top: 0; }
+.spider-settings .setting-item-info { min-width: 0; }
+.spider-settings .setting-item-description { line-height: 1.6; white-space: pre-wrap; }
+.spider-settings .setting-item-control { flex-shrink: 0; max-width: 52%; }
+.spider-settings input[type="text"], .spider-settings input[type="password"], .spider-settings select {
+  width: 260px; max-width: 100%; border-radius: 6px;
+}
+.spider-settings .spider-prompt-setting { display: block; }
+.spider-settings .spider-prompt-setting .setting-item-control { margin-top: 12px; max-width: 100%; }
+.spider-settings textarea { width: 100%; min-height: 150px; resize: vertical; line-height: 1.65; padding: 12px; }
+.spider-settings :is(input, textarea, select) { box-sizing: border-box; }
+.spider-settings textarea[readonly] { background: var(--background-secondary); color: var(--text-normal); }
+.spider-settings-privacy { padding: 18px 0; margin: 8px 0 0; border-top: 1px solid var(--background-modifier-border); color: var(--text-muted); font-size: 0.85rem; line-height: 1.6; }
+.spider-settings :is(input, select, textarea, button, a):focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; }
+
+.bcm-detail-footer { min-height: 0; max-height: 55vh; overflow-y: auto; }
+.bcm-inline-notes { padding: 10px 18px; border-top: 1px solid var(--bcm-border-subtle); }
+.bcm-inline-notes summary { cursor: pointer; font-size: 12px; font-weight: 600; color: var(--bcm-text); }
+.bcm-inline-notes p { margin: 8px 0; font-size: 12px; line-height: 1.5; color: var(--bcm-muted); }
+.bcm-inline-notes textarea { box-sizing: border-box; width: 100%; height: 100px; resize: vertical; max-height: 25vh; font-size: 13px; line-height: 1.6; }
+.bcm-composer textarea { box-sizing: border-box; max-height: 25vh; }
+
+@container (max-width: 540px) {
+  .spider-settings .setting-item { flex-wrap: wrap; gap: 10px; }
+  .spider-settings .setting-item-info { flex: 1 1 100%; }
+  .spider-settings .setting-item-control { max-width: 100%; width: 100%; justify-content: flex-start; }
+  .spider-settings :is(input[type="text"], input[type="password"], select) { width: 100%; }
+}
