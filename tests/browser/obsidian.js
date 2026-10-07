@@ -70,6 +70,7 @@ class Setting {
   setName(value) { this.name.textContent = value; return this; }
   setDesc(value) { this.desc.textContent = value; return this; }
   setClass(value) { this.settingEl.classList.add(value); return this; }
+  setHeading() { this.settingEl.classList.add("setting-item-heading"); this.settingEl.setAttribute("role", "heading"); return this; }
   addControl(tag, type, callback) {
     const el = this.control.createEl(tag);
     if (type) el.type = type;

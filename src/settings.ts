@@ -26,14 +26,14 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
 
     const header = containerEl.createDiv({ cls: "spider-settings-header" });
     const title = header.createDiv({ cls: "spider-settings-title" });
-    title.createEl("h2", { text: "Spider" });
+    new Setting(title).setName("Spider").setHeading();
     title.createEl("span", { text: this.plugin.manifest.version, cls: "spider-settings-version" });
     header.createEl("p", { text: t(language, "settingsIntro") });
     header.createEl("a", { text: t(language, "viewReleaseNotes"), href: "https://github.com/111pointer111/spider/releases" });
 
     const section = (name: TranslationKey, description?: TranslationKey): HTMLElement => {
       const el = containerEl.createEl("section", { cls: "spider-settings-section" });
-      el.createEl("h3", { text: t(language, name) });
+      new Setting(el).setName(t(language, name)).setHeading();
       if (description) el.createEl("p", { text: t(language, description), cls: "spider-settings-description" });
       return el;
     };

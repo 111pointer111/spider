@@ -10,12 +10,15 @@
 
 .spider-settings-header { padding: 4px 0 24px; }
 .spider-settings-title { display: flex; align-items: center; gap: 12px; }
-.spider-settings-title h2 { margin: 0; font-size: 1.6rem; letter-spacing: -0.02em; }
+.spider-settings .spider-settings-title .setting-item-heading { flex: 0 1 auto; width: auto; margin: 0; padding: 0; border: 0; }
+.spider-settings-title .setting-item-heading .setting-item-info { flex: 0 1 auto; }
+.spider-settings-title .setting-item-heading .setting-item-name { font-size: 1.6rem; letter-spacing: -0.02em; }
 .spider-settings-version { color: var(--text-muted); font-size: 0.85rem; }
 .spider-settings-header p { margin: 8px 0 12px; color: var(--text-muted); line-height: 1.6; }
 .spider-settings-header a { font-size: 0.9rem; color: var(--interactive-accent); text-underline-offset: 3px; }
 .spider-settings-section { padding: 22px 0 12px; border-top: 1px solid var(--background-modifier-border); }
-.spider-settings-section h3 { margin: 0 0 8px; font-size: 1.1rem; font-weight: 650; }
+.spider-settings .spider-settings-section > .setting-item-heading { margin: 0 0 8px; padding: 0; border: 0; }
+.spider-settings-section > .setting-item-heading .setting-item-name { font-size: 1.1rem; font-weight: 650; }
 .spider-settings-description { margin: 0 0 12px; color: var(--text-muted); line-height: 1.6; max-width: 70ch; }
 .spider-settings .setting-item { display: flex; box-sizing: border-box; width: 100%; min-width: 0; gap: 20px; padding: 14px 16px; }
 .spider-settings-section > .setting-item:first-of-type { border-top: 0; }
