@@ -1,7 +1,7 @@
 {
   "id": "spider",
   "name": "Spider",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "minAppVersion": "1.8.7",
   "description": "AI chat branches as an interactive knowledge map. Tab to drill down, arrow keys to navigate, structured exports.",
   "author": "huangtao",

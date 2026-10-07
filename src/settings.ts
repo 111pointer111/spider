@@ -26,7 +26,7 @@ export class BranchChatMapSettingTab extends PluginSettingTab {
 
     const header = containerEl.createDiv({ cls: "spider-settings-header" });
     const title = header.createDiv({ cls: "spider-settings-title" });
-    new Setting(title).setName("Spider").setHeading();
+    new Setting(title).setName(t(language, "settingsTitle")).setHeading();
     title.createEl("span", { text: this.plugin.manifest.version, cls: "spider-settings-version" });
     header.createEl("p", { text: t(language, "settingsIntro") });
     header.createEl("a", { text: t(language, "viewReleaseNotes"), href: "https://github.com/111pointer111/spider/releases" });
