@@ -1417,7 +1417,8 @@
 }
 
 .bcm-message-streaming {
-  animation: bcm-message-in 200ms ease both, bcm-stream-pulse 1.8s ease-in-out infinite;
+  /* Only the small caret animates while content streams; keep the answer surface still. */
+  animation: none;
 }
 
 .bcm-message-meta {
@@ -1488,9 +1489,7 @@
   padding: 0;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--bcm-border) 68%, transparent);
-  background: color-mix(in srgb, var(--bcm-panel) 66%, transparent);
-  -webkit-backdrop-filter: blur(10px) saturate(135%);
-  backdrop-filter: blur(10px) saturate(135%);
+  background: var(--bcm-panel);
   box-shadow: 0 2px 6px color-mix(in srgb, rgb(0 0 0), transparent 84%);
   color: color-mix(in srgb, var(--bcm-text) 78%, transparent);
   line-height: 1;
@@ -1599,10 +1598,6 @@
 
 @keyframes bcm-blink {
   50% { opacity: 0; }
-}
-
-@keyframes bcm-stream-pulse {
-  50% { background: var(--bcm-accent-soft); }
 }
 
 @keyframes bcm-message-in {

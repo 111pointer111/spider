@@ -353,6 +353,10 @@ export class ViewState {
     });
   }
 
+  requestComposerFocus(): void {
+    this.setState({ focusToken: this.state.focusToken + 1 });
+  }
+
   updateCurrentNodeTitle(title: string): void {
     const cleanTitle = title.trim();
     const { map, activeNodeId } = this.state;

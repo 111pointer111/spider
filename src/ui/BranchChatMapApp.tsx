@@ -130,6 +130,15 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
     viewState.updateNodeNote(nodeId, note);
   }, [viewState]);
 
+  const handleActivateNode = useCallback((nodeId: NodeId) => {
+    viewState.setActiveNode(nodeId);
+    viewState.requestComposerFocus();
+  }, [viewState]);
+  const handleToggleCollapse = useCallback((nodeId: NodeId) => viewState.toggleCollapse(nodeId), [viewState]);
+  const handlePositionChange = useCallback((nodeId: NodeId, position: { x: number; y: number }) => {
+    viewState.updatePosition(nodeId, position);
+  }, [viewState]);
+
   const handleRevealSearchResult = useCallback((nodeId: NodeId) => {
     viewState.revealNode(nodeId);
   }, [viewState]);
@@ -333,10 +342,10 @@ export function BranchChatMapApp({ plugin, viewState, onController, setTabTitle,
           collapsedIds={collapsedIds}
           language={language}
           searchMatchIds={searchMatchIds}
-          onActivateNode={(nodeId) => viewState.setActiveNode(nodeId)}
+          onActivateNode={handleActivateNode}
           onNoteChange={handleNoteChange}
-          onToggleCollapse={(nodeId) => viewState.toggleCollapse(nodeId)}
-          onPositionChange={(nodeId, position) => viewState.updatePosition(nodeId, position)}
+          onToggleCollapse={handleToggleCollapse}
+          onPositionChange={handlePositionChange}
         />
       </div>
     </div>

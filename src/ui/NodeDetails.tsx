@@ -121,10 +121,13 @@ export function NodeDetails({
   }, [language, node.id, node.title]);
 
   useEffect(() => {
-    if (node.messages.length === 0) {
-      inputRef.current?.focus();
+    const input = inputRef.current;
+    // Restoring a view must not pull focus out of a settings or another app window.
+    if (focusToken > 0 && node.messages.length === 0 && input?.ownerDocument.hasFocus()
+      && [...input.getClientRects()].some((rect) => rect.width > 0 && rect.height > 0)) {
+      input.focus({ preventScroll: true });
     }
-  }, [node.id]);
+  }, [node.id, focusToken]);
 
   return (
     <aside className="bcm-detail">

@@ -128,7 +128,7 @@ export default class BranchChatMapPlugin extends Plugin {
         if (leaf) {
           const view = activeView ?? (leaf.view instanceof BranchChatMapView ? leaf.view : null);
           view?.activateSession();
-          void this.ensureChatSidebarView(true);
+          void this.ensureChatSidebarView(true, false);
         }
       });
     });
@@ -169,6 +169,7 @@ export default class BranchChatMapPlugin extends Plugin {
       await this.app.workspace.revealLeaf(leaf);
     }
     await this.ensureChatSidebarView(true);
+    this.store.getActiveSession()?.requestComposerFocus();
   }
 
   async newSpiderView(): Promise<void> {
@@ -187,6 +188,7 @@ export default class BranchChatMapPlugin extends Plugin {
     await this.app.workspace.revealLeaf(leaf);
 
     await this.ensureChatSidebarView(true);
+    this.store.getActiveSession()?.requestComposerFocus();
   }
 
   private async ensureMainTabView(openIfMissing: boolean): Promise<WorkspaceLeaf | null> {
@@ -217,7 +219,7 @@ export default class BranchChatMapPlugin extends Plugin {
     return leaf;
   }
 
-  private async ensureChatSidebarView(openIfMissing: boolean): Promise<WorkspaceLeaf | null> {
+  private async ensureChatSidebarView(openIfMissing: boolean, reveal = true): Promise<WorkspaceLeaf | null> {
     const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_BRANCH_CHAT_MAP_CHAT);
     if (!openIfMissing && existingLeaves.length === 0) {
       return null;
@@ -231,19 +233,19 @@ export default class BranchChatMapPlugin extends Plugin {
     }
 
     if (sideLeaf) {
-      this.app.workspace.rightSplit.expand();
-      if (openIfMissing) {
+      if (openIfMissing && reveal) {
+        this.app.workspace.rightSplit.expand();
         await this.app.workspace.revealLeaf(sideLeaf);
       }
       return sideLeaf;
     }
 
     const leaf = await this.app.workspace.ensureSideLeaf(VIEW_TYPE_BRANCH_CHAT_MAP_CHAT, "right", {
-      active: true,
-      reveal: openIfMissing,
+      active: openIfMissing && reveal,
+      reveal: openIfMissing && reveal,
       split: false,
     });
-    this.app.workspace.rightSplit.expand();
+    if (openIfMissing && reveal) this.app.workspace.rightSplit.expand();
 
     return leaf;
   }

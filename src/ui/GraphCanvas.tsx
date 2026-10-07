@@ -207,7 +207,6 @@ function GraphCanvasInner({
           source: edge.from,
           target: edge.to,
           type: "smoothstep",
-          animated: isPathEdge,
           className: isPathEdge ? "is-path-edge" : undefined,
         };
       });
@@ -253,10 +252,10 @@ function GraphCanvasInner({
   );
 }
 
-export function GraphCanvas(props: GraphCanvasProps): ReactElement {
+export const GraphCanvas = memo(function GraphCanvas(props: GraphCanvasProps): ReactElement {
   return (
     <ReactFlowProvider>
       <GraphCanvasInner {...props} />
     </ReactFlowProvider>
   );
-}
+});

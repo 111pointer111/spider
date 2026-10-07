@@ -13,6 +13,7 @@ export const Notice = class Notice {
 };
 
 export const Plugin = class Plugin {};
+export const PluginSettingTab = class PluginSettingTab {};
 
 export const WorkspaceLeaf = class WorkspaceLeaf {};
 
